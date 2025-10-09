@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import vn.quahoa.flowershop.model.Admin;
 import vn.quahoa.flowershop.repository.AdminRepository;
@@ -16,6 +17,11 @@ import vn.quahoa.flowershop.repository.AdminRepository;
 public class DataInitializer {
     
     private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
+    private final PasswordEncoder passwordEncoder;
+
+    public DataInitializer(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Bean
     public CommandLineRunner initData(AdminRepository adminRepository) {
@@ -25,7 +31,7 @@ public class DataInitializer {
                 // Tạo admin mặc định
                 Admin defaultAdmin = new Admin();
                 defaultAdmin.setUsername("admin");
-                defaultAdmin.setPassword("admin123");
+                defaultAdmin.setPassword(passwordEncoder.encode("admin123"));
                 
                 adminRepository.save(defaultAdmin);
                 

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import vn.quahoa.flowershop.dto.product.ProductCreateRequest;
 import vn.quahoa.flowershop.dto.product.ProductUpdateRequest;
 import vn.quahoa.flowershop.exception.ResourceNotFoundException;
+import vn.quahoa.flowershop.exception.ValidationException;
 import vn.quahoa.flowershop.model.Category;
 import vn.quahoa.flowershop.model.Product;
 import vn.quahoa.flowershop.model.ProductImage;
@@ -24,6 +25,12 @@ public class ProductService {
     public Product createProduct(ProductCreateRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", request.getCategoryId()));
+
+        // Validate unique product code
+        validateUniqueProductCode(request.getProductCode(), null);
+        
+        // Validate unique product name
+        validateUniqueProductName(request.getName(), null);
 
         Product product = new Product();
         product.setProductCode(request.getProductCode());
@@ -73,6 +80,12 @@ public class ProductService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", request.getCategoryId()));
 
+        // Validate unique product code (if changed)
+        validateUniqueProductCode(request.getProductCode(), id);
+        
+        // Validate unique product name (if changed)
+        validateUniqueProductName(request.getName(), id);
+
         product.setProductCode(request.getProductCode());
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -99,5 +112,21 @@ public class ProductService {
     public void deleteProduct(Long id) {
         Product product = getById(id);
         productRepository.delete(product);
+    }
+    
+    private void validateUniqueProductCode(String productCode, Long currentId) {
+        productRepository.findByProductCodeIgnoreCase(productCode).ifPresent(existing -> {
+            if (currentId == null || !existing.getId().equals(currentId)) {
+                throw new ValidationException("productCode", "Product code already exists");
+            }
+        });
+    }
+    
+    private void validateUniqueProductName(String name, Long currentId) {
+        productRepository.findByNameIgnoreCase(name).ifPresent(existing -> {
+            if (currentId == null || !existing.getId().equals(currentId)) {
+                throw new ValidationException("name", "Product name already exists");
+            }
+        });
     }
 }

@@ -9,9 +9,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class CorsConfig implements WebMvcConfigurer {
 
     private static final String[] ALLOWED_ORIGINS = {
-            "http://localhost:8080",
-            "http://localhost:8082",
-            "http://127.0.0.1:8080"
+            "http://localhost:84",
+            "http://127.0.0.1:84"
     };
 
     @Override

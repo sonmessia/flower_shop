@@ -10,7 +10,9 @@ public class CorsConfig implements WebMvcConfigurer {
 
     private static final String[] ALLOWED_ORIGINS = {
             "http://localhost:84",
-            "http://127.0.0.1:84"
+            "http://127.0.0.1:84",
+            "http://localhost:80",
+            "http://127.0.0.1:80"
     };
 
     @Override

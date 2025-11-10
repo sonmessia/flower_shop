@@ -3,6 +3,7 @@
 ## 📋 Mô tả
 
 Ứng dụng quản lý cửa hàng hoa với giao diện màu hồng pastel, bao gồm:
+
 - **Backend**: Spring Boot + PostgreSQL
 - **Frontend**: Vue.js 3
 - **Database**: PostgreSQL
@@ -10,6 +11,7 @@
 ## 🚀 Cài đặt và Chạy
 
 ### Yêu cầu
+
 - Docker Desktop
 - Docker Compose
 
@@ -75,7 +77,7 @@ npm run serve
 ```
 
 Backend sẽ chạy trên: http://localhost:8080
-Frontend sẽ chạy trên: http://localhost:8081
+Frontend sẽ chạy trên: http://localhost:84
 
 ## 📦 Cấu trúc Project
 
@@ -97,14 +99,14 @@ flower_shop/
 
 ### Backend Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| DB_HOST | localhost | PostgreSQL host |
-| DB_PORT | 5432 | PostgreSQL port |
-| DB_NAME | flowershop | Database name |
-| DB_USER | postgres | Database username |
-| DB_PASSWORD | postgres | Database password |
-| SERVER_PORT | 8080 | Backend server port |
+| Variable    | Default    | Description         |
+| ----------- | ---------- | ------------------- |
+| DB_HOST     | localhost  | PostgreSQL host     |
+| DB_PORT     | 5432       | PostgreSQL port     |
+| DB_NAME     | flowershop | Database name       |
+| DB_USER     | postgres   | Database username   |
+| DB_PASSWORD | postgres   | Database password   |
+| SERVER_PORT | 8080       | Backend server port |
 
 ### Frontend Build Args
 
@@ -113,6 +115,7 @@ Frontend được build với `VUE_APP_API_BASE=http://localhost:8080/api`
 ## 📝 API Endpoints
 
 ### Products
+
 - `GET /api/products` - Lấy tất cả sản phẩm
 - `GET /api/products/{id}` - Lấy chi tiết sản phẩm
 - `POST /api/products` - Tạo sản phẩm mới
@@ -120,6 +123,7 @@ Frontend được build với `VUE_APP_API_BASE=http://localhost:8080/api`
 - `DELETE /api/products/{id}` - Xóa sản phẩm
 
 ### Categories
+
 - `GET /api/categories` - Lấy tất cả danh mục
 - `GET /api/categories/{id}/products` - Lấy sản phẩm theo danh mục
 - `POST /api/categories` - Tạo danh mục mới
@@ -127,11 +131,13 @@ Frontend được build với `VUE_APP_API_BASE=http://localhost:8080/api`
 - `DELETE /api/categories/{id}` - Xóa danh mục
 
 ### Admin
+
 - `POST /api/admins/login` - Đăng nhập admin
 
 ## 🗄️ Database Schema
 
 ### Products Table
+
 - `id` (BIGINT, PK)
 - `product_code` (VARCHAR, UNIQUE)
 - `name` (VARCHAR)
@@ -141,16 +147,19 @@ Frontend được build với `VUE_APP_API_BASE=http://localhost:8080/api`
 - `category_id` (BIGINT, FK)
 
 ### Categories Table
+
 - `id` (BIGINT, PK)
 - `name` (VARCHAR)
 
 ### Product Collections Table
+
 - `id` (BIGINT, PK)
 - `name` (VARCHAR)
 
 ## 🎨 Theme
 
 Ứng dụng sử dụng bảng màu hồng pastel:
+
 - Primary: `#F36DA1`
 - Light: `#FFE1F0`
 - Dark: `#D63675`
@@ -167,12 +176,14 @@ Frontend được build với `VUE_APP_API_BASE=http://localhost:8080/api`
 ## 🐛 Troubleshooting
 
 ### Port đã được sử dụng
+
 ```bash
 # Thay đổi port trong docker-compose.yml
 # Ví dụ: "8081:8080" thay vì "8080:8080"
 ```
 
 ### Database connection error
+
 ```bash
 # Kiểm tra PostgreSQL đang chạy
 docker-compose ps
@@ -182,6 +193,7 @@ docker-compose logs postgres
 ```
 
 ### Frontend không kết nối được backend
+
 ```bash
 # Kiểm tra backend logs
 docker-compose logs backend

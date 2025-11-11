@@ -38,6 +38,8 @@ public class Product {
     @Column(length = 2000)
     private String description;
     private double price;
+    
+    @Column(columnDefinition = "TEXT")
     private String imageUrl;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

@@ -201,14 +201,36 @@
                 </label>
               </div>
 
-              <label>
-                Ảnh đại diện (URL)
-                <input
-                  v-model.trim="productForm.imageUrl"
-                  type="url"
-                  placeholder="https://..."
-                />
-              </label>
+              <div class="main-image-section">
+                <label>
+                  Ảnh đại diện (URL)
+                  <input
+                    v-model.trim="productForm.imageUrl"
+                    type="url"
+                    placeholder="https://..."
+                  />
+                </label>
+                
+                <div class="file-upload-main">
+                  <label class="file-upload-label">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      @change="handleMainImageUpload"
+                      ref="mainImageInput"
+                      style="display: none"
+                    />
+                    <button type="button" class="upload-btn-main" @click="$refs.mainImageInput.click()">
+                      📁 Hoặc chọn file từ máy
+                    </button>
+                  </label>
+                </div>
+                
+                <!-- Preview Main Image -->
+                <div v-if="productForm.imageUrl" class="main-image-preview">
+                  <img :src="productForm.imageUrl" alt="Preview" @error="handleImageError" />
+                </div>
+              </div>
 
               <!-- Multiple Images Section -->
               <div class="multiple-images-section">
@@ -227,6 +249,24 @@
                   <button type="button" class="add-image-btn" @click="addImage">
                     ➕ Thêm
                   </button>
+                </div>
+
+                <!-- Upload File Section -->
+                <div class="file-upload-group">
+                  <label class="file-upload-label">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      @change="handleFileUpload"
+                      ref="fileInput"
+                      style="display: none"
+                    />
+                    <button type="button" class="upload-btn" @click="$refs.fileInput.click()">
+                      📁 Chọn file từ máy
+                    </button>
+                  </label>
+                  <small class="hint">Hoặc kéo thả file vào đây</small>
                 </div>
 
                 <!-- Image List -->
@@ -735,6 +775,8 @@ const productForm = reactive({
   imageUrl: "",
   imageUrls: [],
   categoryId: "",
+  pendingFiles: [], // Files to upload after product creation
+  pendingMainImageFile: null, // Main image file to upload after product creation
 });
 
 const newImageUrl = ref("");
@@ -1181,17 +1223,25 @@ const submitProduct = async () => {
   }
 
   loading.products = true;
+  
+  // Don't send base64 preview URLs to server (they're too long)
+  // Filter out URLs that start with "data:" (base64)
+  const filteredImageUrls = productForm.imageUrls.filter(url => !url.startsWith('data:'));
+  const finalImageUrl = productForm.imageUrl?.startsWith('data:') ? null : productForm.imageUrl?.trim() || null;
+  
   const payload = {
     productCode: productForm.productCode.trim(),
     name: productForm.name.trim(),
     description: productForm.description?.trim() || "",
     price: Number(productForm.price),
-    imageUrl: productForm.imageUrl?.trim() || null,
-    imageUrls: productForm.imageUrls.length > 0 ? productForm.imageUrls : null,
+    imageUrl: finalImageUrl,
+    imageUrls: filteredImageUrls.length > 0 ? filteredImageUrls : null,
     categoryId: Number(productForm.categoryId),
   };
 
   try {
+    let createdProduct = null;
+    
     if (editing.product) {
       await api.put(`/products/${editing.product.id}`, payload);
       showFeedback(
@@ -1199,13 +1249,60 @@ const submitProduct = async () => {
         `✅ Đã cập nhật sản phẩm "${productForm.name}" thành công!`
       );
     } else {
-      await api.post("/products", payload);
+      const response = await api.post("/products", payload);
+      createdProduct = response.data;
       showFeedback(
         "success",
         `✅ Đã thêm sản phẩm "${productForm.name}" thành công!`
       );
     }
-    await loadProducts();
+
+    // Upload pending files if any
+    if (createdProduct && (productForm.pendingMainImageFile || productForm.pendingFiles.length > 0)) {
+      const productId = createdProduct.id;
+      
+      // Upload main image first
+      if (productForm.pendingMainImageFile) {
+        try {
+          const formData = new FormData();
+          formData.append('file', productForm.pendingMainImageFile);
+          await api.post(`/products/${productId}/images/main`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          showFeedback("success", "✅ Đã tải lên ảnh đại diện!");
+        } catch (error) {
+          console.error('Error uploading main image:', error);
+          showFeedback("error", "❌ Không thể tải lên ảnh đại diện.");
+        }
+      }
+
+      // Upload additional images
+      if (productForm.pendingFiles.length > 0) {
+        let uploadedCount = 0;
+        for (const file of productForm.pendingFiles) {
+          try {
+            const formData = new FormData();
+            formData.append('file', file);
+            await api.post(`/products/${productId}/images`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            uploadedCount++;
+          } catch (error) {
+            console.error('Error uploading image:', error);
+          }
+        }
+        if (uploadedCount > 0) {
+          showFeedback("success", `✅ Đã tải lên ${uploadedCount}/${productForm.pendingFiles.length} hình ảnh bổ sung!`);
+        }
+      }
+      
+      // Reload products after all uploads complete
+      await loadProducts();
+    } else {
+      // Reload products if no files to upload
+      await loadProducts();
+    }
+
     resetProductForm();
   } catch (error) {
     handleError(error, "sản phẩm");
@@ -1368,6 +1465,8 @@ const resetProductForm = () => {
   productForm.price = "";
   productForm.imageUrl = "";
   productForm.imageUrls = [];
+  productForm.pendingFiles = [];
+  productForm.pendingMainImageFile = null;
   newImageUrl.value = "";
   productForm.categoryId = categories.value[0]
     ? String(categories.value[0].id)
@@ -1437,6 +1536,177 @@ const addImage = () => {
       "error",
       "❌ URL không hợp lệ. Vui lòng nhập URL đúng định dạng (https://...)."
     );
+  }
+};
+
+// Handle file upload from local machine
+const handleFileUpload = async (event) => {
+  const files = event.target.files;
+  if (!files || files.length === 0) {
+    return;
+  }
+
+  // If product not yet created, store files for later upload
+  if (!productForm.id) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showFeedback("error", `❌ File "${file.name}" không phải là hình ảnh.`);
+        continue;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showFeedback("error", `❌ File "${file.name}" quá lớn (tối đa 5MB).`);
+        continue;
+      }
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        productForm.imageUrls.push(e.target.result);
+      };
+      reader.readAsDataURL(file);
+      
+      // Store file for later upload
+      productForm.pendingFiles.push(file);
+    }
+    
+    showFeedback("info", `📁 Đã chọn ${files.length} file. Hình ảnh sẽ được tải lên sau khi lưu sản phẩm.`);
+    event.target.value = '';
+    return;
+  }
+
+  loading.products = true;
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showFeedback("error", `❌ File "${file.name}" không phải là hình ảnh.`);
+      errorCount++;
+      continue;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showFeedback("error", `❌ File "${file.name}" quá lớn (tối đa 5MB).`);
+      errorCount++;
+      continue;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post(
+        `/products/${productForm.id}/images`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      // Add the returned URL to the image list
+      if (response.data) {
+        productForm.imageUrls.push(response.data);
+        successCount++;
+      }
+    } catch (error) {
+      console.error(`Error uploading ${file.name}:`, error);
+      errorCount++;
+    }
+  }
+
+  loading.products = false;
+  event.target.value = ''; // Clear the file input
+
+  if (successCount > 0) {
+    showFeedback(
+      "success",
+      `✅ Đã tải lên ${successCount} hình ảnh thành công!`
+    );
+  }
+  if (errorCount > 0) {
+    showFeedback(
+      "error",
+      `❌ Có ${errorCount} hình ảnh tải lên thất bại.`
+    );
+  }
+};
+
+// Handle main image upload from local machine
+const handleMainImageUpload = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    showFeedback("error", "❌ File không phải là hình ảnh.");
+    event.target.value = '';
+    return;
+  }
+
+  // Validate file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    showFeedback("error", "❌ File quá lớn (tối đa 5MB).");
+    event.target.value = '';
+    return;
+  }
+
+  // For new product, create preview URL
+  if (!productForm.id) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      productForm.imageUrl = e.target.result;
+      productForm.pendingMainImageFile = file; // Store file for later upload
+    };
+    reader.readAsDataURL(file);
+    showFeedback("info", "📁 Ảnh đại diện sẽ được tải lên sau khi lưu sản phẩm.");
+    event.target.value = '';
+    return;
+  }
+
+  // For existing product, upload immediately
+  loading.products = true;
+  
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post(
+      `/products/${productForm.id}/images/main`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    // Update the main image URL
+    if (response.data) {
+      productForm.imageUrl = response.data;
+      showFeedback("success", "✅ Đã tải lên ảnh đại diện thành công!");
+      
+      // Refresh products list
+      await loadProducts();
+    }
+  } catch (error) {
+    console.error('Error uploading main image:', error);
+    showFeedback("error", "❌ Tải lên ảnh đại diện thất bại.");
+  } finally {
+    loading.products = false;
+    event.target.value = '';
   }
 };
 
@@ -2293,6 +2563,45 @@ button {
   text-align: right;
 }
 
+/* Main Image Section */
+.main-image-section {
+  margin-bottom: 1rem;
+}
+
+.file-upload-main {
+  margin-top: 0.5rem;
+}
+
+.upload-btn-main {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--pink-100);
+  color: var(--pink-700);
+  border: 2px dashed var(--pink-400);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.upload-btn-main:hover {
+  background: var(--pink-200);
+  border-color: var(--pink-500);
+}
+
+.main-image-preview {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.main-image-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 /* Multiple Images Section */
 .multiple-images-section {
   background: rgba(255, 225, 240, 0.3);
@@ -2359,6 +2668,45 @@ button {
 .add-image-btn:hover {
   background: var(--pink-600);
   transform: translateY(-1px);
+}
+
+.file-upload-group {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 2px dashed rgba(243, 109, 161, 0.3);
+  border-radius: 12px;
+  background: rgba(243, 109, 161, 0.05);
+  text-align: center;
+}
+
+.file-upload-label {
+  display: block;
+  cursor: pointer;
+}
+
+.upload-btn {
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-600));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(243, 109, 161, 0.3);
+}
+
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(243, 109, 161, 0.4);
+}
+
+.file-upload-group .hint {
+  display: block;
+  margin-top: 0.5rem;
+  color: #999;
+  font-size: 0.85rem;
 }
 
 .image-list {

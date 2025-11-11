@@ -5,6 +5,7 @@ import AdminLogin from "../components/AdminLogin.vue";
 import AdminDashboard from "../components/AdminDashboard.vue";
 import BlogList from "../components/BlogList.vue";
 import BlogDetail from "../components/BlogDetail.vue";
+import AdminProductManagement from "../components/AdminProductManagement.vue";
 
 const routes = [
   {
@@ -36,6 +37,12 @@ const routes = [
     path: "/admin/dashboard",
     name: "AdminDashboard",
     component: AdminDashboard,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/admin/products",
+    name: "AdminProductManagement",
+    component: AdminProductManagement,
     meta: { requiresAuth: true },
   },
 ];

@@ -23,11 +23,17 @@ public class ProductImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String imageUrl;
 
     @Column(name = "display_order")
     private Integer displayOrder;
+
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "file_path", columnDefinition = "TEXT")
+    private String filePath;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)

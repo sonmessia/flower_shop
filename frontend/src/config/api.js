@@ -11,6 +11,7 @@ export default {
     create: () => `${API_BASE_URL}/products`,
     update: (id) => `${API_BASE_URL}/products/${id}`,
     delete: (id) => `${API_BASE_URL}/products/${id}`,
+    uploadProductImage: (id) => `${API_BASE_URL}/products/${id}/images`,
   },
   
   categories: {

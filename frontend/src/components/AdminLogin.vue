@@ -5,7 +5,6 @@
         <span class="logo" aria-hidden="true">🌸</span>
         <div>
           <h1 id="admin-login-title">Đăng nhập quản trị</h1>
-          <p>Quản lý cửa hàng hoa với bảng màu pastel nhẹ nhàng.</p>
         </div>
       </div>
 

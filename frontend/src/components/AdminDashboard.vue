@@ -201,118 +201,30 @@
                 </label>
               </div>
 
-              <div class="main-image-section">
-                <label>
-                  Ảnh đại diện (URL)
-                  <input
-                    v-model.trim="productForm.imageUrl"
-                    type="url"
-                    placeholder="https://..."
-                  />
-                </label>
-                
-                <div class="file-upload-main">
-                  <label class="file-upload-label">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      @change="handleMainImageUpload"
-                      ref="mainImageInput"
-                      style="display: none"
-                    />
-                    <button type="button" class="upload-btn-main" @click="$refs.mainImageInput.click()">
-                      📁 Hoặc chọn file từ máy
-                    </button>
-                  </label>
-                </div>
-                
-                <!-- Preview Main Image -->
-                <div v-if="productForm.imageUrl" class="main-image-preview">
-                  <img :src="productForm.imageUrl" alt="Preview" @error="handleImageError" />
-                </div>
+              <!-- Main Image Section with ImageUploader Component -->
+              <div class="image-uploader-section">
+                <ImageUploader
+                  ref="mainImageUploader"
+                  label="🖼️ Hình ảnh đại diện"
+                  :existing-images="existingMainImage"
+                  :allow-multiple="false"
+                  :default-mode="'file'"
+                  @update:images="handleMainImageUpdate"
+                  @delete:image="handleDeleteMainImage"
+                />
               </div>
 
-              <!-- Multiple Images Section -->
-              <div class="multiple-images-section">
-                <div class="label-header">
-                  <span>Hình ảnh bổ sung</span>
-                  <small>{{ productForm.imageUrls.length }} ảnh</small>
-                </div>
-
-                <div class="image-input-group">
-                  <input
-                    v-model.trim="newImageUrl"
-                    type="url"
-                    placeholder="Nhập URL hình ảnh..."
-                    @keyup.enter="addImage"
-                  />
-                  <button type="button" class="add-image-btn" @click="addImage">
-                    ➕ Thêm
-                  </button>
-                </div>
-
-                <!-- Upload File Section -->
-                <div class="file-upload-group">
-                  <label class="file-upload-label">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      @change="handleFileUpload"
-                      ref="fileInput"
-                      style="display: none"
-                    />
-                    <button type="button" class="upload-btn" @click="$refs.fileInput.click()">
-                      📁 Chọn file từ máy
-                    </button>
-                  </label>
-                  <small class="hint">Hoặc kéo thả file vào đây</small>
-                </div>
-
-                <!-- Image List -->
-                <div v-if="productForm.imageUrls.length > 0" class="image-list">
-                  <div
-                    v-for="(url, index) in productForm.imageUrls"
-                    :key="index"
-                    class="image-item"
-                  >
-                    <img
-                      :src="url"
-                      :alt="`Image ${index + 1}`"
-                      @error="handleImageError"
-                    />
-                    <div class="image-actions">
-                      <button
-                        type="button"
-                        @click="moveImageUp(index)"
-                        :disabled="index === 0"
-                        title="Di chuyển lên"
-                      >
-                        ⬆️
-                      </button>
-                      <button
-                        type="button"
-                        @click="moveImageDown(index)"
-                        :disabled="index === productForm.imageUrls.length - 1"
-                        title="Di chuyển xuống"
-                      >
-                        ⬇️
-                      </button>
-                      <button
-                        type="button"
-                        @click="removeImage(index)"
-                        class="delete-btn"
-                        title="Xóa"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <small v-else class="hint"
-                  >Chưa có hình ảnh bổ sung. Nhập URL và nhấn "Thêm".</small
-                >
+              <!-- Additional Images Section with ImageUploader Component -->
+              <div class="image-uploader-section">
+                <ImageUploader
+                  ref="additionalImagesUploader"
+                  label="📸 Hình ảnh bổ sung"
+                  :existing-images="existingAdditionalImages"
+                  :allow-multiple="true"
+                  :default-mode="'file'"
+                  @update:images="handleAdditionalImagesUpdate"
+                  @delete:image="handleDeleteAdditionalImage"
+                />
               </div>
 
               <div class="form-actions">
@@ -729,6 +641,7 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 import API from "../config/api";
 import AdminBlogManagement from "./AdminBlogManagement.vue";
+import ImageUploader from "./ImageUploader.vue";
 
 const router = useRouter();
 
@@ -780,6 +693,16 @@ const productForm = reactive({
 });
 
 const newImageUrl = ref("");
+
+// Image Uploader Refs
+const mainImageUploader = ref(null);
+const additionalImagesUploader = ref(null);
+
+// Image States for ImageUploader component
+const existingMainImage = ref([]);
+const newMainImages = ref([]);
+const existingAdditionalImages = ref([]);
+const newAdditionalImages = ref([]);
 
 const categoryForm = reactive({
   name: "",
@@ -1177,6 +1100,54 @@ const loadProducts = async () => {
   }
 };
 
+// ============================================
+// IMAGE UPLOADER HANDLERS
+// ============================================
+
+// Handle main image updates from ImageUploader
+const handleMainImageUpdate = (images) => {
+  newMainImages.value = images;
+  console.log('Main images updated:', images);
+};
+
+// Handle additional images updates from ImageUploader
+const handleAdditionalImagesUpdate = (images) => {
+  newAdditionalImages.value = images;
+  console.log('Additional images updated:', images);
+};
+
+// Handle delete main image
+const handleDeleteMainImage = async (imageId) => {
+  try {
+    if (editing.product && imageId) {
+      // Delete from server if editing existing product
+      await api.delete(`/products/${editing.product.id}/images/main`);
+      existingMainImage.value = [];
+      showToast('success', 'Đã xóa ảnh đại diện');
+    }
+  } catch (error) {
+    console.error('Failed to delete main image:', error);
+    showToast('error', 'Không thể xóa ảnh đại diện');
+  }
+};
+
+// Handle delete additional image
+const handleDeleteAdditionalImage = async (imageId) => {
+  try {
+    if (editing.product && imageId) {
+      // Delete from server
+      await api.delete(`/products/${editing.product.id}/images/${imageId}`);
+      existingAdditionalImages.value = existingAdditionalImages.value.filter(
+        img => img.id !== imageId
+      );
+      showToast('success', 'Đã xóa ảnh');
+    }
+  } catch (error) {
+    console.error('Failed to delete image:', error);
+    showToast('error', 'Không thể xóa ảnh');
+  }
+};
+
 const submitProduct = async () => {
   // Validation trước khi submit
   if (!productForm.name || productForm.name.trim() === "") {
@@ -1224,85 +1195,104 @@ const submitProduct = async () => {
 
   loading.products = true;
   
-  // Don't send base64 preview URLs to server (they're too long)
-  // Filter out URLs that start with "data:" (base64)
-  const filteredImageUrls = productForm.imageUrls.filter(url => !url.startsWith('data:'));
-  const finalImageUrl = productForm.imageUrl?.startsWith('data:') ? null : productForm.imageUrl?.trim() || null;
-  
   const payload = {
     productCode: productForm.productCode.trim(),
     name: productForm.name.trim(),
     description: productForm.description?.trim() || "",
     price: Number(productForm.price),
-    imageUrl: finalImageUrl,
-    imageUrls: filteredImageUrls.length > 0 ? filteredImageUrls : null,
+    imageUrl: null, // Will be set by image upload
+    imageUrls: null, // Will be set by image upload
     categoryId: Number(productForm.categoryId),
   };
 
   try {
-    let createdProduct = null;
+    let productId = null;
     
     if (editing.product) {
       await api.put(`/products/${editing.product.id}`, payload);
+      productId = editing.product.id;
       showFeedback(
         "success",
         `✅ Đã cập nhật sản phẩm "${productForm.name}" thành công!`
       );
     } else {
       const response = await api.post("/products", payload);
-      createdProduct = response.data;
+      productId = response.data.id;
       showFeedback(
         "success",
         `✅ Đã thêm sản phẩm "${productForm.name}" thành công!`
       );
     }
 
-    // Upload pending files if any
-    if (createdProduct && (productForm.pendingMainImageFile || productForm.pendingFiles.length > 0)) {
-      const productId = createdProduct.id;
+    // Upload images using ImageUploader data
+    let totalUploads = 0;
+    let successUploads = 0;
+    
+    // 1. Upload main image (from ImageUploader)
+    if (newMainImages.value.length > 0) {
+      const mainImage = newMainImages.value[0];
+      totalUploads++;
       
-      // Upload main image first
-      if (productForm.pendingMainImageFile) {
-        try {
+      try {
+        if (mainImage.source === 'file' && mainImage.file) {
+          // Upload file
           const formData = new FormData();
-          formData.append('file', productForm.pendingMainImageFile);
+          formData.append('file', mainImage.file); // Backend expects 'file'
           await api.post(`/products/${productId}/images/main`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
-          showFeedback("success", "✅ Đã tải lên ảnh đại diện!");
-        } catch (error) {
-          console.error('Error uploading main image:', error);
-          showFeedback("error", "❌ Không thể tải lên ảnh đại diện.");
+          successUploads++;
+          console.log('✅ Main image file uploaded');
+        } else if (mainImage.source === 'url' && mainImage.imageUrl) {
+          // Upload from URL
+          await api.post(`/products/${productId}/images/main-url`, {
+            imageUrl: mainImage.imageUrl
+          });
+          successUploads++;
+          console.log('✅ Main image URL processed');
         }
+      } catch (error) {
+        console.error('❌ Error uploading main image:', error);
+        showToast('error', 'Không thể tải lên ảnh đại diện');
       }
-
-      // Upload additional images
-      if (productForm.pendingFiles.length > 0) {
-        let uploadedCount = 0;
-        for (const file of productForm.pendingFiles) {
-          try {
-            const formData = new FormData();
-            formData.append('file', file);
-            await api.post(`/products/${productId}/images`, formData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            uploadedCount++;
-          } catch (error) {
-            console.error('Error uploading image:', error);
-          }
-        }
-        if (uploadedCount > 0) {
-          showFeedback("success", `✅ Đã tải lên ${uploadedCount}/${productForm.pendingFiles.length} hình ảnh bổ sung!`);
-        }
-      }
-      
-      // Reload products after all uploads complete
-      await loadProducts();
-    } else {
-      // Reload products if no files to upload
-      await loadProducts();
     }
 
+    // 2. Upload additional images (from ImageUploader)
+    for (const image of newAdditionalImages.value) {
+      totalUploads++;
+      
+      try {
+        if (image.source === 'file' && image.file) {
+          // Upload file
+          const formData = new FormData();
+          formData.append('file', image.file); // Backend expects 'file'
+          await api.post(`/products/${productId}/images`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          successUploads++;
+          console.log(`✅ Additional image file uploaded: ${image.fileName}`);
+        } else if (image.source === 'url' && image.imageUrl) {
+          // Upload from URL
+          await api.post(`/products/${productId}/images/url`, {
+            imageUrl: image.imageUrl
+          });
+          successUploads++;
+          console.log(`✅ Additional image URL processed`);
+        }
+      } catch (error) {
+        console.error('❌ Error uploading additional image:', error);
+      }
+    }
+
+    if (totalUploads > 0) {
+      showToast(
+        'success',
+        `✅ Đã tải lên ${successUploads}/${totalUploads} hình ảnh!`
+      );
+    }
+    
+    // Reload products
+    await loadProducts();
     resetProductForm();
   } catch (error) {
     handleError(error, "sản phẩm");
@@ -1450,6 +1440,34 @@ const startEditProduct = (product) => {
   productForm.imageUrl = product.imageUrl || "";
   productForm.imageUrls = product.imageUrls ? [...product.imageUrls] : [];
   productForm.categoryId = String(product.categoryId);
+  
+  // Load existing images into ImageUploader
+  // Main image
+  if (product.imageUrl) {
+    existingMainImage.value = [{
+      id: 'main',
+      imageUrl: product.imageUrl,
+      fileName: 'Main Image'
+    }];
+  } else {
+    existingMainImage.value = [];
+  }
+  
+  // Additional images
+  if (product.images && product.images.length > 0) {
+    existingAdditionalImages.value = product.images.map(img => ({
+      id: img.id,
+      imageUrl: img.imageUrl,
+      fileName: img.fileName || `Image ${img.id}`,
+      displayOrder: img.displayOrder
+    }));
+  } else {
+    existingAdditionalImages.value = [];
+  }
+  
+  // Clear new images
+  newMainImages.value = [];
+  newAdditionalImages.value = [];
 };
 
 const startEditCategory = (category) => {
@@ -1471,6 +1489,20 @@ const resetProductForm = () => {
   productForm.categoryId = categories.value[0]
     ? String(categories.value[0].id)
     : "";
+  
+  // Reset ImageUploader states
+  existingMainImage.value = [];
+  newMainImages.value = [];
+  existingAdditionalImages.value = [];
+  newAdditionalImages.value = [];
+  
+  // Clear ImageUploader components
+  if (mainImageUploader.value) {
+    mainImageUploader.value.clearNewImages();
+  }
+  if (additionalImagesUploader.value) {
+    additionalImagesUploader.value.clearNewImages();
+  }
 };
 
 const resetCategoryForm = () => {
@@ -1507,235 +1539,6 @@ const refreshAll = async () => {
       "❌ Không thể làm mới dữ liệu. Vui lòng kiểm tra kết nối."
     );
   }
-};
-
-// Image management functions
-const addImage = () => {
-  if (!newImageUrl.value || !newImageUrl.value.trim()) {
-    showFeedback("error", "❌ Vui lòng nhập URL hình ảnh.");
-    return;
-  }
-
-  try {
-    new URL(newImageUrl.value.trim());
-
-    // Check duplicate
-    if (productForm.imageUrls.includes(newImageUrl.value.trim())) {
-      showFeedback("error", "❌ URL hình ảnh này đã được thêm trước đó.");
-      return;
-    }
-
-    productForm.imageUrls.push(newImageUrl.value.trim());
-    newImageUrl.value = "";
-    showFeedback(
-      "success",
-      `✅ Đã thêm hình ảnh thành công! (${productForm.imageUrls.length} ảnh)`
-    );
-  } catch (e) {
-    showFeedback(
-      "error",
-      "❌ URL không hợp lệ. Vui lòng nhập URL đúng định dạng (https://...)."
-    );
-  }
-};
-
-// Handle file upload from local machine
-const handleFileUpload = async (event) => {
-  const files = event.target.files;
-  if (!files || files.length === 0) {
-    return;
-  }
-
-  // If product not yet created, store files for later upload
-  if (!productForm.id) {
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        showFeedback("error", `❌ File "${file.name}" không phải là hình ảnh.`);
-        continue;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        showFeedback("error", `❌ File "${file.name}" quá lớn (tối đa 5MB).`);
-        continue;
-      }
-
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        productForm.imageUrls.push(e.target.result);
-      };
-      reader.readAsDataURL(file);
-      
-      // Store file for later upload
-      productForm.pendingFiles.push(file);
-    }
-    
-    showFeedback("info", `📁 Đã chọn ${files.length} file. Hình ảnh sẽ được tải lên sau khi lưu sản phẩm.`);
-    event.target.value = '';
-    return;
-  }
-
-  loading.products = true;
-  let successCount = 0;
-  let errorCount = 0;
-
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      showFeedback("error", `❌ File "${file.name}" không phải là hình ảnh.`);
-      errorCount++;
-      continue;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showFeedback("error", `❌ File "${file.name}" quá lớn (tối đa 5MB).`);
-      errorCount++;
-      continue;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await api.post(
-        `/products/${productForm.id}/images`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      // Add the returned URL to the image list
-      if (response.data) {
-        productForm.imageUrls.push(response.data);
-        successCount++;
-      }
-    } catch (error) {
-      console.error(`Error uploading ${file.name}:`, error);
-      errorCount++;
-    }
-  }
-
-  loading.products = false;
-  event.target.value = ''; // Clear the file input
-
-  if (successCount > 0) {
-    showFeedback(
-      "success",
-      `✅ Đã tải lên ${successCount} hình ảnh thành công!`
-    );
-  }
-  if (errorCount > 0) {
-    showFeedback(
-      "error",
-      `❌ Có ${errorCount} hình ảnh tải lên thất bại.`
-    );
-  }
-};
-
-// Handle main image upload from local machine
-const handleMainImageUpload = async (event) => {
-  const file = event.target.files?.[0];
-  if (!file) {
-    return;
-  }
-
-  // Validate file type
-  if (!file.type.startsWith('image/')) {
-    showFeedback("error", "❌ File không phải là hình ảnh.");
-    event.target.value = '';
-    return;
-  }
-
-  // Validate file size (max 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    showFeedback("error", "❌ File quá lớn (tối đa 5MB).");
-    event.target.value = '';
-    return;
-  }
-
-  // For new product, create preview URL
-  if (!productForm.id) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      productForm.imageUrl = e.target.result;
-      productForm.pendingMainImageFile = file; // Store file for later upload
-    };
-    reader.readAsDataURL(file);
-    showFeedback("info", "📁 Ảnh đại diện sẽ được tải lên sau khi lưu sản phẩm.");
-    event.target.value = '';
-    return;
-  }
-
-  // For existing product, upload immediately
-  loading.products = true;
-  
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await api.post(
-      `/products/${productForm.id}/images/main`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
-
-    // Update the main image URL
-    if (response.data) {
-      productForm.imageUrl = response.data;
-      showFeedback("success", "✅ Đã tải lên ảnh đại diện thành công!");
-      
-      // Refresh products list
-      await loadProducts();
-    }
-  } catch (error) {
-    console.error('Error uploading main image:', error);
-    showFeedback("error", "❌ Tải lên ảnh đại diện thất bại.");
-  } finally {
-    loading.products = false;
-    event.target.value = '';
-  }
-};
-
-const removeImage = (index) => {
-  productForm.imageUrls.splice(index, 1);
-  showFeedback(
-    "success",
-    `✅ Đã xóa hình ảnh. Còn lại ${productForm.imageUrls.length} ảnh.`
-  );
-};
-
-const moveImageUp = (index) => {
-  if (index > 0) {
-    const temp = productForm.imageUrls[index];
-    productForm.imageUrls[index] = productForm.imageUrls[index - 1];
-    productForm.imageUrls[index - 1] = temp;
-  }
-};
-
-const moveImageDown = (index) => {
-  if (index < productForm.imageUrls.length - 1) {
-    const temp = productForm.imageUrls[index];
-    productForm.imageUrls[index] = productForm.imageUrls[index + 1];
-    productForm.imageUrls[index + 1] = temp;
-  }
-};
-
-const handleImageError = (e) => {
-  e.target.src = "https://via.placeholder.com/150x150/FFE1F0/F36DA1?text=Error";
 };
 
 // Admin management functions
@@ -3160,5 +2963,28 @@ select.error:focus {
   color: var(--pink-400);
   text-align: right;
   margin-top: -4px;
+}
+
+/* Image Uploader Section Styling */
+.image-uploader-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(251, 207, 232, 0.1) 0%, rgba(244, 114, 182, 0.05) 100%);
+  border: 2px dashed var(--pink-200);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.image-uploader-section:hover {
+  border-color: var(--pink-400);
+  background: linear-gradient(135deg, rgba(251, 207, 232, 0.15) 0%, rgba(244, 114, 182, 0.08) 100%);
+  box-shadow: 0 4px 12px rgba(244, 114, 182, 0.1);
+}
+
+.image-uploader-section:focus-within {
+  border-color: var(--pink-500);
+  border-style: solid;
+  background: linear-gradient(135deg, rgba(251, 207, 232, 0.2) 0%, rgba(244, 114, 182, 0.1) 100%);
+  box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.15);
 }
 </style>

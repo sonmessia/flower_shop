@@ -14,7 +14,8 @@ public class ProductResponse {
     private String description;
     private double price;
     private String imageUrl;
-    private List<String> imageUrls;
+    private List<String> imageUrls; // Deprecated: use images instead
+    private List<ProductImageResponse> images; // Full image info with id, fileName, etc.
     private Long categoryId;
     private String categoryName;
 
@@ -33,9 +34,17 @@ public class ProductResponse {
         }
         
         if (product.getImages() != null && !product.getImages().isEmpty()) {
+            // Set imageUrls for backward compatibility
             response.setImageUrls(
                 product.getImages().stream()
                     .map(img -> img.getImageUrl())
+                    .collect(Collectors.toList())
+            );
+            
+            // Set full image info
+            response.setImages(
+                product.getImages().stream()
+                    .map(ProductImageResponse::fromEntity)
                     .collect(Collectors.toList())
             );
         }

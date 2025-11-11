@@ -1,0 +1,59 @@
+import { createRouter, createWebHistory } from "vue-router";
+import HomePage from "../components/HomePage.vue";
+import ProductDetail from "../components/ProductDetail.vue";
+import AdminLogin from "../components/AdminLogin.vue";
+import AdminDashboard from "../components/AdminDashboard.vue";
+import BlogList from "../components/BlogList.vue";
+import BlogDetail from "../components/BlogDetail.vue";
+
+const routes = [
+  {
+    path: "/",
+    name: "Home",
+    component: HomePage,
+  },
+  {
+    path: "/products/:id",
+    name: "ProductDetail",
+    component: ProductDetail,
+  },
+  {
+    path: "/blogs",
+    name: "BlogList",
+    component: BlogList,
+  },
+  {
+    path: "/blogs/:id",
+    name: "BlogDetail",
+    component: BlogDetail,
+  },
+  {
+    path: "/admin/login",
+    name: "AdminLogin",
+    component: AdminLogin,
+  },
+  {
+    path: "/admin/dashboard",
+    name: "AdminDashboard",
+    component: AdminDashboard,
+    meta: { requiresAuth: true },
+  },
+];
+
+const router = createRouter({
+  history: createWebHistory(process.env.BASE_URL),
+  routes,
+});
+
+// Navigation guard
+router.beforeEach((to, from, next) => {
+  const admin = JSON.parse(localStorage.getItem("admin") || "null");
+
+  if (to.meta.requiresAuth && !admin) {
+    next("/admin/login");
+  } else {
+    next();
+  }
+});
+
+export default router;

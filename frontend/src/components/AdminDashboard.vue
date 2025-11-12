@@ -1107,13 +1107,13 @@ const loadProducts = async () => {
 // Handle main image updates from ImageUploader
 const handleMainImageUpdate = (images) => {
   newMainImages.value = images;
-  console.log('Main images updated:', images);
+  console.log("Main images updated:", images);
 };
 
 // Handle additional images updates from ImageUploader
 const handleAdditionalImagesUpdate = (images) => {
   newAdditionalImages.value = images;
-  console.log('Additional images updated:', images);
+  console.log("Additional images updated:", images);
 };
 
 // Handle delete main image
@@ -1123,11 +1123,11 @@ const handleDeleteMainImage = async (imageId) => {
       // Delete from server if editing existing product
       await api.delete(`/products/${editing.product.id}/images/main`);
       existingMainImage.value = [];
-      showToast('success', 'Đã xóa ảnh đại diện');
+      showToast("success", "Đã xóa ảnh đại diện");
     }
   } catch (error) {
-    console.error('Failed to delete main image:', error);
-    showToast('error', 'Không thể xóa ảnh đại diện');
+    console.error("Failed to delete main image:", error);
+    showToast("error", "Không thể xóa ảnh đại diện");
   }
 };
 
@@ -1138,13 +1138,13 @@ const handleDeleteAdditionalImage = async (imageId) => {
       // Delete from server
       await api.delete(`/products/${editing.product.id}/images/${imageId}`);
       existingAdditionalImages.value = existingAdditionalImages.value.filter(
-        img => img.id !== imageId
+        (img) => img.id !== imageId
       );
-      showToast('success', 'Đã xóa ảnh');
+      showToast("success", "Đã xóa ảnh");
     }
   } catch (error) {
-    console.error('Failed to delete image:', error);
-    showToast('error', 'Không thể xóa ảnh');
+    console.error("Failed to delete image:", error);
+    showToast("error", "Không thể xóa ảnh");
   }
 };
 
@@ -1194,7 +1194,7 @@ const submitProduct = async () => {
   }
 
   loading.products = true;
-  
+
   const payload = {
     productCode: productForm.productCode.trim(),
     name: productForm.name.trim(),
@@ -1207,7 +1207,7 @@ const submitProduct = async () => {
 
   try {
     let productId = null;
-    
+
     if (editing.product) {
       await api.put(`/products/${editing.product.id}`, payload);
       productId = editing.product.id;
@@ -1227,70 +1227,70 @@ const submitProduct = async () => {
     // Upload images using ImageUploader data
     let totalUploads = 0;
     let successUploads = 0;
-    
+
     // 1. Upload main image (from ImageUploader)
     if (newMainImages.value.length > 0) {
       const mainImage = newMainImages.value[0];
       totalUploads++;
-      
+
       try {
-        if (mainImage.source === 'file' && mainImage.file) {
+        if (mainImage.source === "file" && mainImage.file) {
           // Upload file
           const formData = new FormData();
-          formData.append('file', mainImage.file); // Backend expects 'file'
+          formData.append("file", mainImage.file); // Backend expects 'file'
           await api.post(`/products/${productId}/images/main`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { "Content-Type": "multipart/form-data" },
           });
           successUploads++;
-          console.log('✅ Main image file uploaded');
-        } else if (mainImage.source === 'url' && mainImage.imageUrl) {
+          console.log("✅ Main image file uploaded");
+        } else if (mainImage.source === "url" && mainImage.imageUrl) {
           // Upload from URL
           await api.post(`/products/${productId}/images/main-url`, {
-            imageUrl: mainImage.imageUrl
+            imageUrl: mainImage.imageUrl,
           });
           successUploads++;
-          console.log('✅ Main image URL processed');
+          console.log("✅ Main image URL processed");
         }
       } catch (error) {
-        console.error('❌ Error uploading main image:', error);
-        showToast('error', 'Không thể tải lên ảnh đại diện');
+        console.error("❌ Error uploading main image:", error);
+        showToast("error", "Không thể tải lên ảnh đại diện");
       }
     }
 
     // 2. Upload additional images (from ImageUploader)
     for (const image of newAdditionalImages.value) {
       totalUploads++;
-      
+
       try {
-        if (image.source === 'file' && image.file) {
+        if (image.source === "file" && image.file) {
           // Upload file
           const formData = new FormData();
-          formData.append('file', image.file); // Backend expects 'file'
+          formData.append("file", image.file); // Backend expects 'file'
           await api.post(`/products/${productId}/images`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { "Content-Type": "multipart/form-data" },
           });
           successUploads++;
           console.log(`✅ Additional image file uploaded: ${image.fileName}`);
-        } else if (image.source === 'url' && image.imageUrl) {
+        } else if (image.source === "url" && image.imageUrl) {
           // Upload from URL
           await api.post(`/products/${productId}/images/url`, {
-            imageUrl: image.imageUrl
+            imageUrl: image.imageUrl,
           });
           successUploads++;
           console.log(`✅ Additional image URL processed`);
         }
       } catch (error) {
-        console.error('❌ Error uploading additional image:', error);
+        console.error("❌ Error uploading additional image:", error);
       }
     }
 
     if (totalUploads > 0) {
       showToast(
-        'success',
+        "success",
         `✅ Đã tải lên ${successUploads}/${totalUploads} hình ảnh!`
       );
     }
-    
+
     // Reload products
     await loadProducts();
     resetProductForm();
@@ -1440,31 +1440,33 @@ const startEditProduct = (product) => {
   productForm.imageUrl = product.imageUrl || "";
   productForm.imageUrls = product.imageUrls ? [...product.imageUrls] : [];
   productForm.categoryId = String(product.categoryId);
-  
+
   // Load existing images into ImageUploader
   // Main image
   if (product.imageUrl) {
-    existingMainImage.value = [{
-      id: 'main',
-      imageUrl: product.imageUrl,
-      fileName: 'Main Image'
-    }];
+    existingMainImage.value = [
+      {
+        id: "main",
+        imageUrl: product.imageUrl,
+        fileName: "Main Image",
+      },
+    ];
   } else {
     existingMainImage.value = [];
   }
-  
+
   // Additional images
   if (product.images && product.images.length > 0) {
-    existingAdditionalImages.value = product.images.map(img => ({
+    existingAdditionalImages.value = product.images.map((img) => ({
       id: img.id,
       imageUrl: img.imageUrl,
       fileName: img.fileName || `Image ${img.id}`,
-      displayOrder: img.displayOrder
+      displayOrder: img.displayOrder,
     }));
   } else {
     existingAdditionalImages.value = [];
   }
-  
+
   // Clear new images
   newMainImages.value = [];
   newAdditionalImages.value = [];
@@ -1489,13 +1491,13 @@ const resetProductForm = () => {
   productForm.categoryId = categories.value[0]
     ? String(categories.value[0].id)
     : "";
-  
+
   // Reset ImageUploader states
   existingMainImage.value = [];
   newMainImages.value = [];
   existingAdditionalImages.value = [];
   newAdditionalImages.value = [];
-  
+
   // Clear ImageUploader components
   if (mainImageUploader.value) {
     mainImageUploader.value.clearNewImages();
@@ -2969,7 +2971,11 @@ select.error:focus {
 .image-uploader-section {
   margin-bottom: 20px;
   padding: 16px;
-  background: linear-gradient(135deg, rgba(251, 207, 232, 0.1) 0%, rgba(244, 114, 182, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(251, 207, 232, 0.1) 0%,
+    rgba(244, 114, 182, 0.05) 100%
+  );
   border: 2px dashed var(--pink-200);
   border-radius: 12px;
   transition: all 0.3s ease;
@@ -2977,14 +2983,22 @@ select.error:focus {
 
 .image-uploader-section:hover {
   border-color: var(--pink-400);
-  background: linear-gradient(135deg, rgba(251, 207, 232, 0.15) 0%, rgba(244, 114, 182, 0.08) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(251, 207, 232, 0.15) 0%,
+    rgba(244, 114, 182, 0.08) 100%
+  );
   box-shadow: 0 4px 12px rgba(244, 114, 182, 0.1);
 }
 
 .image-uploader-section:focus-within {
   border-color: var(--pink-500);
   border-style: solid;
-  background: linear-gradient(135deg, rgba(251, 207, 232, 0.2) 0%, rgba(244, 114, 182, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(251, 207, 232, 0.2) 0%,
+    rgba(244, 114, 182, 0.1) 100%
+  );
   box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.15);
 }
 </style>

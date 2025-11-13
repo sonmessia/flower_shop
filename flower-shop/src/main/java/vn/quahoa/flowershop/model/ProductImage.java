@@ -1,6 +1,7 @@
 package vn.quahoa.flowershop.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,7 +24,8 @@ public class ProductImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    // Image URL - stored as file path
+    @Column(name = "image_url", nullable = false, length = 500)
     private String imageUrl;
 
     @Column(name = "display_order")
@@ -32,11 +34,17 @@ public class ProductImage {
     @Column(name = "file_name")
     private String fileName;
 
-    @Column(name = "file_path", columnDefinition = "TEXT")
-    private String filePath;
-
+    // Product relationship
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     @JsonIgnore
     private Product product;
+    
+    /**
+     * Get the product ID without loading the entire product entity
+     */
+    @JsonProperty(value = "productId", access = JsonProperty.Access.READ_ONLY)
+    public Long getProductId() {
+        return product != null ? product.getId() : null;
+    }
 }

@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import vn.quahoa.flowershop.dto.product.ImageUrlRequest;
 import vn.quahoa.flowershop.dto.product.ProductCreateRequest;
 import vn.quahoa.flowershop.dto.product.ProductResponse;
 import vn.quahoa.flowershop.dto.product.ProductUpdateRequest;
@@ -73,27 +72,25 @@ public class ProductController {
                 .collect(Collectors.toList());
     }
 
+    // ============================================
+    // IMAGE UPLOAD ENDPOINTS
+    // ============================================
+
+    /**
+     * Upload an additional image for a product
+     */
     @PostMapping("/products/{id}/images")
     public ResponseEntity<String> uploadProductImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         String imageUrl = productService.uploadProductImage(id, file);
         return ResponseEntity.ok(imageUrl);
     }
 
+    /**
+     * Upload main product image
+     */
     @PostMapping("/products/{id}/images/main")
     public ResponseEntity<String> uploadMainProductImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         String imageUrl = productService.uploadMainProductImage(id, file);
-        return ResponseEntity.ok(imageUrl);
-    }
-
-    @PostMapping("/products/{id}/images/main-url")
-    public ResponseEntity<String> uploadMainProductImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
-        String imageUrl = productService.uploadMainProductImageFromUrl(id, request.getImageUrl());
-        return ResponseEntity.ok(imageUrl);
-    }
-
-    @PostMapping("/products/{id}/images/url")
-    public ResponseEntity<String> uploadProductImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
-        String imageUrl = productService.uploadProductImageFromUrl(id, request.getImageUrl());
         return ResponseEntity.ok(imageUrl);
     }
 
@@ -128,14 +125,4 @@ public class ProductController {
         String imageUrl = productService.updateMainImage(id, file);
         return ResponseEntity.ok(imageUrl);
     }
-
-    @PutMapping("/products/{id}/images/main-url")
-    public ResponseEntity<String> updateMainImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
-        String imageUrl = productService.updateMainImageFromUrl(id, request.getImageUrl());
-        return ResponseEntity.ok(imageUrl);
-    }
 }
-
-
-
-

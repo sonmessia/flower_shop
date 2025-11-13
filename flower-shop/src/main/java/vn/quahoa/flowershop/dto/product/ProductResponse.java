@@ -26,6 +26,7 @@ public class ProductResponse {
         response.setName(product.getName());
         response.setDescription(product.getDescription());
         response.setPrice(product.getPrice());
+        // Generate URL for main image if binary data exists
         response.setImageUrl(product.getImageUrl());
         response.setCategoryId(product.getCategoryId());
         

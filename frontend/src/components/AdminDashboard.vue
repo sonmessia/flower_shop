@@ -1199,7 +1199,7 @@ const submitProduct = async () => {
 
   loading.products = true;
 
-  // Xác định imageUrl cho payload
+  // Xác định imageUrl cho payload (chỉ sử dụng khi user nhập URL)
   let imageUrlForPayload = null;
   
   if (editing.product) {
@@ -1208,15 +1208,15 @@ const submitProduct = async () => {
       // Có ảnh mới được chọn
       const mainImage = newMainImages.value[0];
       if (mainImage.source === "url" && mainImage.imageUrl) {
-        // Nếu là URL, sử dụng trực tiếp làm imageUrl chính
+        // Nếu là URL, backend sẽ tự download và lưu
         imageUrlForPayload = mainImage.imageUrl;
       }
-      // Nếu là file, imageUrl sẽ được cập nhật sau khi upload
+      // Nếu là file, sẽ upload riêng sau khi tạo/cập nhật product
     } else if (shouldDeleteMainImage.value) {
       // Người dùng đã xóa ảnh chính
       imageUrlForPayload = ""; // Chuỗi rỗng để xóa ảnh
     }
-    // Nếu không có ảnh mới và không xóa, imageUrlForPayload stays null để backend giữ lại ảnh cũ
+    // Nếu không có ảnh mới và không xóa, backend sẽ giữ lại ảnh cũ
   } else {
     // Nếu là sản phẩm mới
     if (newMainImages.value.length > 0) {
@@ -1224,7 +1224,7 @@ const submitProduct = async () => {
       if (mainImage.source === "url" && mainImage.imageUrl) {
         imageUrlForPayload = mainImage.imageUrl;
       }
-      // Nếu là file, imageUrl sẽ được cập nhật sau khi upload
+      // Nếu là file, sẽ upload riêng sau khi tạo product
     }
   }
 
@@ -1233,8 +1233,8 @@ const submitProduct = async () => {
     name: productForm.name.trim(),
     description: productForm.description?.trim() || "",
     price: Number(productForm.price),
-    imageUrl: imageUrlForPayload,
-    imageUrls: null, // Will be handled separately
+    imageUrl: imageUrlForPayload, // Chỉ có giá trị khi user nhập URL
+    imageUrls: null, // Additional images sẽ được xử lý riêng
     categoryId: Number(productForm.categoryId),
   };
 

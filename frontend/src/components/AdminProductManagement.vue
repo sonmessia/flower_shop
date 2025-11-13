@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import { uploadProductImage } from "../config/api";
+import { uploadProductImage } from "../config/apiUtils";
 
 export default {
   data() {
@@ -31,13 +31,22 @@ export default {
         return;
       }
       try {
-        const response = await uploadProductImage(productId, file);
-        alert("Tải lên thành công: " + response);
+        const imageUrl = await uploadProductImage(productId, file);
+        alert("Tải lên thành công! URL: " + imageUrl);
+        // Reload products to show new image
+        await this.loadProducts();
       } catch (error) {
         console.error(error);
-        alert("Tải lên thất bại.");
+        alert("Tải lên thất bại: " + error.message);
       }
     },
+    async loadProducts() {
+      // TODO: Implement loading products from API
+      // This should fetch from API.products.getAll()
+    },
+  },
+  mounted() {
+    this.loadProducts();
   },
 };
 </script>

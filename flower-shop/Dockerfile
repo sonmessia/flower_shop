@@ -17,6 +17,10 @@ WORKDIR /app
 # Copy jar from build stage
 COPY --from=build /app/target/*.jar app.jar
 
+# Create images directory for file storage
+RUN mkdir -p /app/images/products /app/images/blogs && \
+    chmod -R 755 /app/images
+
 # Expose port
 EXPOSE 8080
 

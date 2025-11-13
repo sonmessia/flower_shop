@@ -11,6 +11,23 @@ export default {
     create: () => `${API_BASE_URL}/products`,
     update: (id) => `${API_BASE_URL}/products/${id}`,
     delete: (id) => `${API_BASE_URL}/products/${id}`,
+    
+    // Image upload endpoints
+    uploadMainImage: (id) => `${API_BASE_URL}/products/${id}/images/main`,
+    uploadMainImageUrl: (id) => `${API_BASE_URL}/products/${id}/images/main-url`,
+    uploadImage: (id) => `${API_BASE_URL}/products/${id}/images`,
+    uploadImageUrl: (id) => `${API_BASE_URL}/products/${id}/images/url`,
+    
+    // Image retrieval endpoints
+    getMainImage: (id) => `${API_BASE_URL}/products/${id}/image`,
+    getImage: (productId, imageId) => `${API_BASE_URL}/products/${productId}/images/${imageId}`,
+    
+    // Image delete endpoints
+    deleteMainImage: (id) => `${API_BASE_URL}/products/${id}/images/main`,
+    deleteImage: (productId, imageId) => `${API_BASE_URL}/products/${productId}/images/${imageId}`,
+    deleteAllImages: (id) => `${API_BASE_URL}/products/${id}/images`,
+    
+    // Legacy endpoint (kept for backward compatibility)
     uploadProductImage: (id) => `${API_BASE_URL}/products/${id}/images`,
   },
   

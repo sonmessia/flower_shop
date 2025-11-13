@@ -37,11 +37,14 @@ public class Product {
 
     @Column(length = 2000)
     private String description;
+    
     private double price;
     
-    @Column(columnDefinition = "TEXT")
-    private String imageUrl;
+    // Main product image - stored as file path
+    @Column(name = "main_image_url", length = 500)
+    private String mainImageUrl;
 
+    // Additional product images - stored in separate table
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductImage> images = new ArrayList<>();
 
@@ -53,6 +56,31 @@ public class Product {
     @JsonProperty(value = "categoryId", access = JsonProperty.Access.READ_ONLY)
     public Long getCategoryId() {
         return category != null ? category.getId() : null;
+    }
+    
+    /**
+     * Returns the URL to access the main product image
+     * The image path is stored in the database and served via static resource handler
+     */
+    @JsonProperty(value = "imageUrl", access = JsonProperty.Access.READ_ONLY)
+    public String getImageUrl() {
+        return mainImageUrl;
+    }
+    
+    /**
+     * Helper method to add an additional image to the product
+     */
+    public void addImage(ProductImage productImage) {
+        images.add(productImage);
+        productImage.setProduct(this);
+    }
+    
+    /**
+     * Helper method to remove an additional image from the product
+     */
+    public void removeImage(ProductImage productImage) {
+        images.remove(productImage);
+        productImage.setProduct(null);
     }
 }
 

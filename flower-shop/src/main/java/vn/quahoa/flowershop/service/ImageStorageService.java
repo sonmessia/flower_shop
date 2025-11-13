@@ -105,6 +105,22 @@ public class ImageStorageService {
     }
 
     /**
+     * Download image from URL and return as byte array
+     */
+    public byte[] downloadImageFromUrl(String imageUrl) throws IOException {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return null;
+        }
+
+        try (InputStream in = new URL(imageUrl).openStream()) {
+            return in.readAllBytes();
+        } catch (Exception e) {
+            log.error("Failed to download image from URL: {}", imageUrl, e);
+            throw new IOException("Failed to download image from URL: " + imageUrl, e);
+        }
+    }
+
+    /**
      * Delete image file
      */
     public void deleteImage(String imageUrl) {

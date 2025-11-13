@@ -24,9 +24,13 @@ public class ProductCreateRequest {
     @Min(value = 0, message = "Price must be greater than or equal to zero")
     private Double price;
 
+    // Main product image as URL or binary data
     private String imageUrl;
+    private byte[] image;
     
+    // Additional product images as URLs or binary data
     private List<String> imageUrls;
+    private List<byte[]> images;
 
     @NotNull(message = "Category id is required")
     private Long categoryId;

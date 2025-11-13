@@ -25,8 +25,8 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final ImageStorageService imageStorageService;
     private final ProductImageRepository productImageRepository;
+    private final FileStorageService fileStorageService;
 
     public Product createProduct(ProductCreateRequest request) {
         Category category = categoryRepository.findById(Objects.requireNonNull(request.getCategoryId(), "Category ID must not be null"))
@@ -43,41 +43,64 @@ public class ProductService {
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
-        product.setImageUrl(request.getImageUrl()); // Temporary, will be processed after save
+        
+        // Set main image from URL or binary data
+        if (request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty()) {
+            try {
+                String relativePath = fileStorageService.saveFileFromUrl(request.getImageUrl(), "products");
+                product.setMainImageUrl(fileStorageService.getPublicUrl(relativePath));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to download and save main image from URL", e);
+            }
+        } else if (request.getImage() != null && request.getImage().length > 0) {
+            // For backward compatibility - save from binary data (from base64 or file upload)
+            try {
+                java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(request.getImage());
+                String relativePath = fileStorageService.saveFileLocally(inputStream, "image.jpg", "products");
+                product.setMainImageUrl(fileStorageService.getPublicUrl(relativePath));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to save main image", e);
+            }
+        }
+        
         product.setCategory(category);
         
         // Save product first to get ID
         product = productRepository.save(product);
         
-        // Download and save main image if URL is provided
-        if (request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty()) {
-            try {
-                String localImageUrl = imageStorageService.saveImageFromUrl(
-                    request.getImageUrl(), product.getId(), true);
-                product.setImageUrl(localImageUrl);
-                product = productRepository.save(product);
-            } catch (IOException e) {
-                // Keep original URL if download fails
-                product.setImageUrl(request.getImageUrl());
-            }
-        }
-        
-        // Add multiple images if provided
+        // Add additional images from URLs or binary data
         if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
             int order = 0;
             for (String imageUrl : request.getImageUrls()) {
-                try {
-                    String localImageUrl = imageStorageService.saveImageFromUrl(
-                        imageUrl, product.getId(), false);
-                    
-                    ProductImage image = new ProductImage();
-                    image.setImageUrl(localImageUrl);
-                    image.setDisplayOrder(order++);
-                    image.setProduct(product);
-                    product.getImages().add(image);
-                } catch (IOException e) {
-                    // Skip if download fails, just log it
-                    // Continue to next image
+                if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                    try {
+                        String relativePath = fileStorageService.saveFileFromUrl(imageUrl, "products");
+                        
+                        ProductImage image = new ProductImage();
+                        image.setImageUrl(fileStorageService.getPublicUrl(relativePath));
+                        image.setDisplayOrder(order++);
+                        product.addImage(image);
+                    } catch (IOException e) {
+                        // Log and continue with other images
+                        System.err.println("Failed to download image from URL: " + imageUrl);
+                    }
+                }
+            }
+        } else if (request.getImages() != null && !request.getImages().isEmpty()) {
+            int order = 0;
+            for (byte[] imageData : request.getImages()) {
+                if (imageData != null && imageData.length > 0) {
+                    try {
+                        java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(imageData);
+                        String relativePath = fileStorageService.saveFileLocally(inputStream, "image.jpg", "products");
+                        
+                        ProductImage image = new ProductImage();
+                        image.setImageUrl(fileStorageService.getPublicUrl(relativePath));
+                        image.setDisplayOrder(order++);
+                        product.addImage(image);
+                    } catch (IOException e) {
+                        System.err.println("Failed to save image: " + e.getMessage());
+                    }
                 }
             }
             product = productRepository.save(product);
@@ -122,49 +145,54 @@ public class ProductService {
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         
-        // Handle imageUrl update
-        if (request.getImageUrl() != null) {
-            // Check if imageUrl is empty string, which means user wants to clear the image
-            if (request.getImageUrl().trim().isEmpty()) {
-                // Delete old main image if exists
-                if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
-                    imageStorageService.deleteImage(product.getImageUrl());
+        // Update main image from URL or binary data
+        if (request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty()) {
+            try {
+                // Delete old image if exists
+                if (product.getMainImageUrl() != null) {
+                    deleteImageFile(product.getMainImageUrl());
                 }
-                product.setImageUrl(null);
-            } else {
-                // New image URL provided
-                String newImageUrl = request.getImageUrl();
                 
-                // Check if it's a remote URL that needs to be downloaded
-                if (!newImageUrl.startsWith(imageStorageService.getBaseUrl())) {
-                    try {
-                        // Download and save image locally
-                        String localImageUrl = imageStorageService.saveImageFromUrl(
-                            newImageUrl, product.getId(), true);
-                        
-                        // Delete old main image if exists
-                        if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
-                            imageStorageService.deleteImage(product.getImageUrl());
-                        }
-                        
-                        product.setImageUrl(localImageUrl);
-                    } catch (IOException e) {
-                        // If download fails, keep original URL
-                        product.setImageUrl(newImageUrl);
-                    }
-                } else {
-                    // It's already a local URL, just update directly
-                    product.setImageUrl(newImageUrl);
+                String relativePath = fileStorageService.saveFileFromUrl(request.getImageUrl(), "products");
+                product.setMainImageUrl(fileStorageService.getPublicUrl(relativePath));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to download and save main image from URL", e);
+            }
+        } else if (request.getImage() != null && request.getImage().length > 0) {
+            try {
+                // Delete old image if exists
+                if (product.getMainImageUrl() != null) {
+                    deleteImageFile(product.getMainImageUrl());
                 }
+                
+                java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(request.getImage());
+                String relativePath = fileStorageService.saveFileLocally(inputStream, "image.jpg", "products");
+                product.setMainImageUrl(fileStorageService.getPublicUrl(relativePath));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to save main image", e);
             }
         }
         
         product.setCategory(category);
         
-        // Note: imageUrls update is handled separately via upload endpoints
-        // We don't clear existing images here to preserve them
-        
         return productRepository.save(product);
+    }
+    
+    /**
+     * Helper method to delete image file from storage
+     */
+    private void deleteImageFile(String imageUrl) {
+        try {
+            // Extract relative path from URL
+            String baseUrl = fileStorageService.getPublicUrl("");
+            if (imageUrl.startsWith(baseUrl)) {
+                String relativePath = imageUrl.substring(baseUrl.length());
+                fileStorageService.deleteFile(relativePath);
+            }
+        } catch (IOException e) {
+            // Log error but don't fail the operation
+            System.err.println("Failed to delete old image file: " + e.getMessage());
+        }
     }
 
     public void deleteProduct(Long id) {
@@ -188,76 +216,55 @@ public class ProductService {
         });
     }
 
+    // ============================================
+    // IMAGE UPLOAD METHODS
+    // ============================================
+
+    /**
+     * Upload an additional image for a product
+     */
     public String uploadProductImage(Long productId, MultipartFile file) {
         Product product = getById(productId);
 
         try {
-            String imageUrl = imageStorageService.saveImageFromFile(file, productId, false);
+            String relativePath = fileStorageService.saveFile(file, "products");
+            String publicUrl = fileStorageService.getPublicUrl(relativePath);
             
             ProductImage productImage = new ProductImage();
             productImage.setFileName(file.getOriginalFilename());
-            productImage.setFilePath(imageUrl);
-            productImage.setImageUrl(imageUrl);
-            productImage.setProduct(product);
-            product.getImages().add(productImage);
+            productImage.setImageUrl(publicUrl);
+            product.addImage(productImage);
 
             productRepository.save(product);
 
-            return imageUrl;
+            return publicUrl;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload file", e);
+            throw new RuntimeException("Failed to upload product image", e);
         }
     }
 
+    /**
+     * Upload main product image
+     */
     public String uploadMainProductImage(Long productId, MultipartFile file) {
         Product product = getById(productId);
 
         try {
-            String imageUrl = imageStorageService.saveImageFromFile(file, productId, true);
+            // Delete old image if exists
+            if (product.getMainImageUrl() != null) {
+                deleteImageFile(product.getMainImageUrl());
+            }
             
-            // Update product's main image URL
-            product.setImageUrl(imageUrl);
+            String relativePath = fileStorageService.saveFile(file, "products");
+            String publicUrl = fileStorageService.getPublicUrl(relativePath);
+            
+            // Update product's main image
+            product.setMainImageUrl(publicUrl);
             productRepository.save(product);
 
-            return imageUrl;
+            return publicUrl;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload main image", e);
-        }
-    }
-
-    public String uploadMainProductImageFromUrl(Long productId, String imageUrl) {
-        Product product = getById(productId);
-
-        try {
-            String localImageUrl = imageStorageService.saveImageFromUrl(imageUrl, productId, true);
-            
-            // Update product's main image URL
-            product.setImageUrl(localImageUrl);
-            productRepository.save(product);
-
-            return localImageUrl;
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to download and save main image from URL", e);
-        }
-    }
-
-    public String uploadProductImageFromUrl(Long productId, String imageUrl) {
-        Product product = getById(productId);
-
-        try {
-            String localImageUrl = imageStorageService.saveImageFromUrl(imageUrl, productId, false);
-            
-            ProductImage productImage = new ProductImage();
-            productImage.setImageUrl(localImageUrl);
-            productImage.setFilePath(localImageUrl);
-            productImage.setProduct(product);
-            product.getImages().add(productImage);
-
-            productRepository.save(product);
-
-            return localImageUrl;
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to download and save image from URL", e);
+            throw new RuntimeException("Failed to upload main product image", e);
         }
     }
 
@@ -271,14 +278,14 @@ public class ProductService {
     public void deleteMainImage(Long productId) {
         Product product = getById(productId);
         
-        if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
-            // Delete physical file
-            imageStorageService.deleteImage(product.getImageUrl());
-            
-            // Clear from database
-            product.setImageUrl(null);
-            productRepository.save(product);
+        // Delete image file from storage
+        if (product.getMainImageUrl() != null) {
+            deleteImageFile(product.getMainImageUrl());
         }
+        
+        // Clear main image URL from database
+        product.setMainImageUrl(null);
+        productRepository.save(product);
     }
 
     /**
@@ -287,7 +294,7 @@ public class ProductService {
     public void deleteProductImage(Long productId, Long imageId) {
         Product product = getById(productId);
         
-        ProductImage productImage = productImageRepository.findById(imageId)
+        ProductImage productImage = productImageRepository.findById(Objects.requireNonNull(imageId))
                 .orElseThrow(() -> new ResourceNotFoundException("ProductImage", imageId));
         
         // Verify the image belongs to this product
@@ -295,16 +302,16 @@ public class ProductService {
             throw new RuntimeException("Image does not belong to this product");
         }
         
-        // Delete physical file
-        if (productImage.getImageUrl() != null && !productImage.getImageUrl().isEmpty()) {
-            imageStorageService.deleteImage(productImage.getImageUrl());
+        // Delete image file from storage
+        if (productImage.getImageUrl() != null) {
+            deleteImageFile(productImage.getImageUrl());
         }
         
         // Remove from product's images list
         product.getImages().remove(productImage);
         
         // Delete from database
-        productImageRepository.delete(productImage);
+        productImageRepository.delete(Objects.requireNonNull(productImage));
     }
 
     /**
@@ -316,13 +323,13 @@ public class ProductService {
         List<ProductImage> images = List.copyOf(product.getImages()); // Copy to avoid ConcurrentModificationException
         
         for (ProductImage image : images) {
-            // Delete physical file
-            if (image.getImageUrl() != null && !image.getImageUrl().isEmpty()) {
-                imageStorageService.deleteImage(image.getImageUrl());
+            // Delete image file from storage
+            if (image.getImageUrl() != null) {
+                deleteImageFile(image.getImageUrl());
             }
             
             // Delete from database
-            productImageRepository.delete(image);
+            productImageRepository.delete(Objects.requireNonNull(image));
         }
         
         // Clear from product
@@ -334,29 +341,7 @@ public class ProductService {
      * Update main image - replace existing with new one
      */
     public String updateMainImage(Long productId, MultipartFile file) {
-        Product product = getById(productId);
-        
-        // Delete old main image if exists
-        if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
-            imageStorageService.deleteImage(product.getImageUrl());
-        }
-        
-        // Upload new image
+        // Upload new image (replaces existing)
         return uploadMainProductImage(productId, file);
-    }
-
-    /**
-     * Update main image from URL - replace existing with new one
-     */
-    public String updateMainImageFromUrl(Long productId, String imageUrl) {
-        Product product = getById(productId);
-        
-        // Delete old main image if exists
-        if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
-            imageStorageService.deleteImage(product.getImageUrl());
-        }
-        
-        // Upload new image
-        return uploadMainProductImageFromUrl(productId, imageUrl);
     }
 }

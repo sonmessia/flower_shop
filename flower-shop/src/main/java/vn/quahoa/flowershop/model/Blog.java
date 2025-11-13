@@ -1,10 +1,13 @@
 package vn.quahoa.flowershop.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,6 +18,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.ToString;
@@ -22,7 +26,7 @@ import lombok.ToString;
 @Entity
 @Table(name = "blogs")
 @Data
-@ToString(exclude = "author")
+@ToString(exclude = {"author", "images"})
 public class Blog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,7 +38,7 @@ public class Blog {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    private String imageUrl;
+    private String imageUrl; // Main/featured image
 
     @Column(length = 500)
     private String summary;
@@ -46,6 +50,9 @@ public class Blog {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id")
     private Admin author;
+
+    @OneToMany(mappedBy = "blog", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BlogImage> images = new ArrayList<>();
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

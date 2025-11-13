@@ -192,20 +192,31 @@
             />
           </div>
 
+          <!-- Main Image Section with ImageUploader Component -->
           <div class="form-group">
-            <label>URL Hình ảnh</label>
-            <input
-              v-model="formData.imageUrl"
-              type="url"
-              placeholder="https://example.com/image.jpg"
-            />
-            <img
-              v-if="formData.imageUrl"
-              :src="formData.imageUrl"
-              class="image-preview"
-              @error="handleImageError"
+            <ImageUploader
+              ref="mainImageUploader"
+              label="🖼️ Hình ảnh đại diện"
+              :existing-images="existingMainImage"
+              :allow-multiple="false"
+              :default-mode="'file'"
+              @update:images="handleMainImageUpdate"
+              @delete:image="handleDeleteMainImage"
             />
           </div>
+
+          <!-- Additional Images Section with ImageUploader Component -->
+          <!-- <div class="form-group">
+            <ImageUploader
+              ref="additionalImagesUploader"
+              label="📸 Hình ảnh bổ sung"
+              :existing-images="existingAdditionalImages"
+              :allow-multiple="true"
+              :default-mode="'file'"
+              @update:images="handleAdditionalImagesUpdate"
+              @delete:image="handleDeleteAdditionalImage"
+            />
+          </div> -->
 
           <div class="form-group">
             <label>Tóm tắt</label>
@@ -256,6 +267,7 @@
 import { ref, onMounted } from "vue";
 import axios from "axios";
 import apiConfig from "../config/api";
+import ImageUploader from "./ImageUploader.vue";
 
 const blogs = ref([]);
 const filteredBlogs = ref([]);
@@ -265,6 +277,16 @@ const showModal = ref(false);
 const isEditing = ref(false);
 const searchQuery = ref("");
 const statusFilter = ref("");
+
+// Image Uploader Refs
+const mainImageUploader = ref(null);
+const additionalImagesUploader = ref(null);
+
+// Image States for ImageUploader component
+const existingMainImage = ref([]);
+const newMainImages = ref([]);
+const existingAdditionalImages = ref([]);
+const newAdditionalImages = ref([]);
 
 const formData = ref({
   title: "",
@@ -324,6 +346,20 @@ const openCreateModal = () => {
     formData.value.authorId = admin.id;
   }
 
+  // Reset image states
+  existingMainImage.value = [];
+  newMainImages.value = [];
+  existingAdditionalImages.value = [];
+  newAdditionalImages.value = [];
+
+  // Clear ImageUploader components
+  if (mainImageUploader.value) {
+    mainImageUploader.value.clearNewImages();
+  }
+  if (additionalImagesUploader.value) {
+    additionalImagesUploader.value.clearNewImages();
+  }
+
   showModal.value = true;
 };
 
@@ -337,6 +373,37 @@ const openEditModal = (blog) => {
     summary: blog.summary || "",
     status: blog.status,
   };
+
+  // Load existing images into ImageUploader
+  // Main image
+  if (blog.imageUrl) {
+    existingMainImage.value = [
+      {
+        id: "main",
+        imageUrl: blog.imageUrl,
+        fileName: "Main Image",
+      },
+    ];
+  } else {
+    existingMainImage.value = [];
+  }
+
+  // Additional images
+  if (blog.images && blog.images.length > 0) {
+    existingAdditionalImages.value = blog.images.map((img) => ({
+      id: img.id,
+      imageUrl: img.imageUrl,
+      fileName: img.fileName || `Image ${img.id}`,
+      displayOrder: img.displayOrder,
+    }));
+  } else {
+    existingAdditionalImages.value = [];
+  }
+
+  // Clear new images
+  newMainImages.value = [];
+  newAdditionalImages.value = [];
+
   showModal.value = true;
 };
 
@@ -350,21 +417,151 @@ const closeModal = () => {
     status: "DRAFT",
   };
   currentBlogId.value = null;
+
+  // Reset image states
+  existingMainImage.value = [];
+  newMainImages.value = [];
+  existingAdditionalImages.value = [];
+  newAdditionalImages.value = [];
+
+  // Clear ImageUploader components
+  if (mainImageUploader.value) {
+    mainImageUploader.value.clearNewImages();
+  }
+  if (additionalImagesUploader.value) {
+    additionalImagesUploader.value.clearNewImages();
+  }
+};
+
+// ============================================
+// IMAGE UPLOADER HANDLERS
+// ============================================
+
+// Handle main image updates from ImageUploader
+const handleMainImageUpdate = (images) => {
+  newMainImages.value = images;
+  console.log("Main images updated:", images);
+};
+
+// Handle additional images updates from ImageUploader
+const handleAdditionalImagesUpdate = (images) => {
+  newAdditionalImages.value = images;
+  console.log("Additional images updated:", images);
+};
+
+// Handle delete main image
+const handleDeleteMainImage = async (imageId) => {
+  try {
+    if (isEditing.value && currentBlogId.value && imageId) {
+      // Delete from server if editing existing blog
+      await axios.delete(apiConfig.blogs.deleteMainImage(currentBlogId.value));
+      existingMainImage.value = [];
+      alert("Đã xóa ảnh đại diện");
+    }
+  } catch (error) {
+    console.error("Failed to delete main image:", error);
+    alert("Không thể xóa ảnh đại diện");
+  }
+};
+
+// Handle delete additional image
+const handleDeleteAdditionalImage = async (imageId) => {
+  try {
+    if (isEditing.value && currentBlogId.value && imageId) {
+      // Delete from server
+      await axios.delete(apiConfig.blogs.deleteImage(currentBlogId.value, imageId));
+      existingAdditionalImages.value = existingAdditionalImages.value.filter(
+        (img) => img.id !== imageId
+      );
+      alert("Đã xóa ảnh");
+    }
+  } catch (error) {
+    console.error("Failed to delete image:", error);
+    alert("Không thể xóa ảnh");
+  }
 };
 
 const saveBlog = async () => {
   try {
     saving.value = true;
 
+    let blogId = null;
+
     if (isEditing.value) {
       await axios.put(
         apiConfig.blogs.update(currentBlogId.value),
         formData.value
       );
+      blogId = currentBlogId.value;
       alert("Cập nhật bài viết thành công!");
     } else {
-      await axios.post(apiConfig.blogs.create(), formData.value);
+      const response = await axios.post(apiConfig.blogs.create(), formData.value);
+      blogId = response.data.id;
       alert("Tạo bài viết mới thành công!");
+    }
+
+    // Upload images using ImageUploader data
+    let totalUploads = 0;
+    let successUploads = 0;
+
+    // 1. Upload main image (from ImageUploader)
+    if (newMainImages.value.length > 0) {
+      const mainImage = newMainImages.value[0];
+      totalUploads++;
+
+      try {
+        if (mainImage.source === "file" && mainImage.file) {
+          // Upload file
+          const formData = new FormData();
+          formData.append("file", mainImage.file);
+          await axios.post(apiConfig.blogs.uploadMainImage(blogId), formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          successUploads++;
+          console.log("✅ Main image file uploaded");
+        } else if (mainImage.source === "url" && mainImage.imageUrl) {
+          // Upload from URL
+          await axios.post(apiConfig.blogs.uploadMainImageUrl(blogId), {
+            imageUrl: mainImage.imageUrl,
+          });
+          successUploads++;
+          console.log("✅ Main image URL processed");
+        }
+      } catch (error) {
+        console.error("❌ Error uploading main image:", error);
+        alert("Không thể tải lên ảnh đại diện");
+      }
+    }
+
+    // 2. Upload additional images (from ImageUploader)
+    for (const image of newAdditionalImages.value) {
+      totalUploads++;
+
+      try {
+        if (image.source === "file" && image.file) {
+          // Upload file
+          const formData = new FormData();
+          formData.append("file", image.file);
+          await axios.post(apiConfig.blogs.uploadImage(blogId), formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          successUploads++;
+          console.log(`✅ Additional image file uploaded: ${image.fileName}`);
+        } else if (image.source === "url" && image.imageUrl) {
+          // Upload from URL
+          await axios.post(apiConfig.blogs.uploadImageUrl(blogId), {
+            imageUrl: image.imageUrl,
+          });
+          successUploads++;
+          console.log(`✅ Additional image URL processed`);
+        }
+      } catch (error) {
+        console.error("❌ Error uploading additional image:", error);
+      }
+    }
+
+    if (totalUploads > 0) {
+      alert(`✅ Đã tải lên ${successUploads}/${totalUploads} hình ảnh!`);
     }
 
     closeModal();
@@ -433,11 +630,6 @@ const formatDate = (dateString) => {
 const truncate = (text, length) => {
   if (!text) return "";
   return text.length > length ? text.substring(0, length) + "..." : text;
-};
-
-const handleImageError = (e) => {
-  e.target.src =
-    "https://via.placeholder.com/400x250/FFE1F0/F36DA1?text=Invalid+Image";
 };
 
 onMounted(() => {

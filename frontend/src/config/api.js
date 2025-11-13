@@ -49,5 +49,13 @@ export default {
     publish: (id) => `${API_BASE_URL}/admin/blogs/${id}/publish`,
     unpublish: (id) => `${API_BASE_URL}/admin/blogs/${id}/unpublish`,
     getByAuthor: (authorId) => `${API_BASE_URL}/admin/blogs/author/${authorId}`,
+    
+    // Image upload endpoints
+    uploadMainImage: (id) => `${API_BASE_URL}/admin/blogs/${id}/images/main`,
+    uploadMainImageUrl: (id) => `${API_BASE_URL}/admin/blogs/${id}/images/main-url`,
+    uploadImage: (id) => `${API_BASE_URL}/admin/blogs/${id}/images`,
+    uploadImageUrl: (id) => `${API_BASE_URL}/admin/blogs/${id}/images/url`,
+    deleteMainImage: (id) => `${API_BASE_URL}/admin/blogs/${id}/images/main`,
+    deleteImage: (blogId, imageId) => `${API_BASE_URL}/admin/blogs/${blogId}/images/${imageId}`,
   }
 }

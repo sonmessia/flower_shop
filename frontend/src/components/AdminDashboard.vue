@@ -1200,8 +1200,8 @@ const submitProduct = async () => {
     name: productForm.name.trim(),
     description: productForm.description?.trim() || "",
     price: Number(productForm.price),
-    imageUrl: newMainImages.value.length > 0 ? editing.product?.imageUrl || null : null, // Will be set by image upload
-    imageUrls: null, // Will be set by image upload
+    imageUrl: editing.product?.imageUrl || null, // Keep existing imageUrl
+    imageUrls: null, // Will be handled separately
     categoryId: Number(productForm.categoryId),
   };
 
@@ -1228,7 +1228,7 @@ const submitProduct = async () => {
     let totalUploads = 0;
     let successUploads = 0;
 
-    // 1. Upload main image (from ImageUploader)
+    // 1. Upload main image ONLY if there's a new image selected
     if (newMainImages.value.length > 0) {
       const mainImage = newMainImages.value[0];
       totalUploads++;
@@ -1237,7 +1237,7 @@ const submitProduct = async () => {
         if (mainImage.source === "file" && mainImage.file) {
           // Upload file
           const formData = new FormData();
-          formData.append("file", mainImage.file); // Backend expects 'file'
+          formData.append("file", mainImage.file);
           await api.post(`/products/${productId}/images/main`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
@@ -1257,47 +1257,46 @@ const submitProduct = async () => {
       }
     }
 
-    // 2. Upload additional images (from ImageUploader)
-    for (const image of newAdditionalImages.value) {
-      totalUploads++;
+    // 2. Upload additional images ONLY if there are new images
+    if (newAdditionalImages.value.length > 0) {
+      for (const image of newAdditionalImages.value) {
+        totalUploads++;
 
-      try {
-        if (image.source === "file" && image.file) {
-          // Upload file
-          const formData = new FormData();
-          formData.append("file", image.file); // Backend expects 'file'
-          await api.post(`/products/${productId}/images`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-          successUploads++;
-          console.log(`✅ Additional image file uploaded: ${image.fileName}`);
-        } else if (image.source === "url" && image.imageUrl) {
-          // Upload from URL
-          await api.post(`/products/${productId}/images/url`, {
-            imageUrl: image.imageUrl,
-          });
-          successUploads++;
-          console.log(`✅ Additional image URL processed`);
+        try {
+          if (image.source === "file" && image.file) {
+            // Upload file
+            const formData = new FormData();
+            formData.append("file", image.file);
+            await api.post(`/products/${productId}/images`, formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+            successUploads++;
+            console.log(`✅ Additional image file uploaded: ${image.fileName}`);
+          } else if (image.source === "url" && image.imageUrl) {
+            // Upload from URL
+            await api.post(`/products/${productId}/images/url`, {
+              imageUrl: image.imageUrl,
+            });
+            successUploads++;
+            console.log(`✅ Additional image URL processed`);
+          }
+        } catch (error) {
+          console.error("❌ Error uploading additional image:", error);
+          showToast("error", `Không thể tải lên ảnh: ${image.fileName || 'Unknown'}`);
         }
-      } catch (error) {
-        console.error("❌ Error uploading additional image:", error);
       }
     }
 
-    if (existingAdditionalImages.value.length > 0) {
-      payload.imageUrls = existingAdditionalImages.value.map(
-        (img) => img.imageUrl
-      );
-    }
-
     if (totalUploads > 0) {
-      showToast(
-        "success",
-        `✅ Đã tải lên ${successUploads}/${totalUploads} hình ảnh!`
-      );
+      if (successUploads === totalUploads) {
+        showToast("success", `✅ Đã tải lên ${successUploads} hình ảnh thành công!`);
+      } else {
+        showToast("warning", `⚠️ Đã tải lên ${successUploads}/${totalUploads} hình ảnh`);
+      }
     }
 
-    // Reload products
+    // Reload products to get updated data with images
+    await loadProducts();
     await loadProducts();
     resetProductForm();
   } catch (error) {

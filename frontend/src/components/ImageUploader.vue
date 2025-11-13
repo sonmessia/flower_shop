@@ -52,7 +52,7 @@
         class="file-input"
       />
       <div class="file-info">
-        <small>Chấp nhận: image/*. Kích thước tối đa: 5 MB</small>
+        <small>Chấp nhận: image/*</small>
       </div>
     </div>
 
@@ -187,14 +187,14 @@ const handleFileSelect = (event) => {
     return;
   }
   
-  // Validate file size (5MB max)
-  const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-  const invalidFiles = files.filter(file => file.size > maxSize);
-  
-  if (invalidFiles.length > 0) {
-    alert('Một số file vượt quá 5MB. Vui lòng chọn file nhỏ hơn.');
-    return;
-  }
+  // Note: File size validation removed to allow uploading large images
+  // You can re-enable it by uncommenting the code below and adjusting maxSize
+  // const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+  // const invalidFiles = files.filter(file => file.size > maxSize);
+  // if (invalidFiles.length > 0) {
+  //   alert('Một số file vượt quá 10MB. Vui lòng chọn file nhỏ hơn.');
+  //   return;
+  // }
   
   // Process files
   files.forEach(file => {

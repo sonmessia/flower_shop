@@ -444,10 +444,10 @@ const handleMainImageUpdate = (images) => {
 };
 
 // Handle additional images updates from ImageUploader
-const handleAdditionalImagesUpdate = (images) => {
-  newAdditionalImages.value = images;
-  console.log("Additional images updated:", images);
-};
+// const handleAdditionalImagesUpdate = (images) => {
+//   newAdditionalImages.value = images;
+//   console.log("Additional images updated:", images);
+// };
 
 // Handle delete main image
 const handleDeleteMainImage = async (imageId) => {
@@ -465,21 +465,21 @@ const handleDeleteMainImage = async (imageId) => {
 };
 
 // Handle delete additional image
-const handleDeleteAdditionalImage = async (imageId) => {
-  try {
-    if (isEditing.value && currentBlogId.value && imageId) {
-      // Delete from server
-      await axios.delete(apiConfig.blogs.deleteImage(currentBlogId.value, imageId));
-      existingAdditionalImages.value = existingAdditionalImages.value.filter(
-        (img) => img.id !== imageId
-      );
-      alert("Đã xóa ảnh");
-    }
-  } catch (error) {
-    console.error("Failed to delete image:", error);
-    alert("Không thể xóa ảnh");
-  }
-};
+// const handleDeleteAdditionalImage = async (imageId) => {
+//   try {
+//     if (isEditing.value && currentBlogId.value && imageId) {
+//       // Delete from server
+//       await axios.delete(apiConfig.blogs.deleteImage(currentBlogId.value, imageId));
+//       existingAdditionalImages.value = existingAdditionalImages.value.filter(
+//         (img) => img.id !== imageId
+//       );
+//       alert("Đã xóa ảnh");
+//     }
+//   } catch (error) {
+//     console.error("Failed to delete image:", error);
+//     alert("Không thể xóa ảnh");
+//   }
+// };
 
 const saveBlog = async () => {
   try {

@@ -121,21 +121,16 @@ public class ProductService {
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
-        product.setImageUrl(request.getImageUrl());
+        
+        // Only update imageUrl if provided and not null
+        if (request.getImageUrl() != null) {
+            product.setImageUrl(request.getImageUrl());
+        }
+        
         product.setCategory(category);
         
-        // Update images if provided
-        if (request.getImageUrls() != null) {
-            product.getImages().clear();
-            int order = 0;
-            for (String imageUrl : request.getImageUrls()) {
-                ProductImage image = new ProductImage();
-                image.setImageUrl(imageUrl);
-                image.setDisplayOrder(order++);
-                image.setProduct(product);
-                product.getImages().add(image);
-            }
-        }
+        // Note: imageUrls update is handled separately via upload endpoints
+        // We don't clear existing images here to preserve them
         
         return productRepository.save(product);
     }

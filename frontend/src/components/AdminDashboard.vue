@@ -1207,9 +1207,9 @@ const submitProduct = async () => {
     if (newMainImages.value.length > 0) {
       // Có ảnh mới được chọn
       const mainImage = newMainImages.value[0];
-      if (mainImage.source === "url" && mainImage.imageUrl) {
+      if (mainImage.source === "url" && mainImage.url) {
         // Nếu là URL, backend sẽ tự download và lưu
-        imageUrlForPayload = mainImage.imageUrl;
+        imageUrlForPayload = mainImage.url;
       }
       // Nếu là file, sẽ upload riêng sau khi tạo/cập nhật product
     } else if (shouldDeleteMainImage.value) {
@@ -1221,8 +1221,8 @@ const submitProduct = async () => {
     // Nếu là sản phẩm mới
     if (newMainImages.value.length > 0) {
       const mainImage = newMainImages.value[0];
-      if (mainImage.source === "url" && mainImage.imageUrl) {
-        imageUrlForPayload = mainImage.imageUrl;
+      if (mainImage.source === "url" && mainImage.url) {
+        imageUrlForPayload = mainImage.url;
       }
       // Nếu là file, sẽ upload riêng sau khi tạo product
     }
@@ -1282,9 +1282,9 @@ const submitProduct = async () => {
           console.error("❌ Error uploading main image:", error);
           showToast("error", "Không thể tải lên ảnh đại diện");
         }
-      } else if (mainImage.source === "url" && mainImage.imageUrl) {
+      } else if (mainImage.source === "url" && mainImage.url) {
         // URL đã được lưu trong payload, chỉ cần log xác nhận
-        console.log("✅ Main image URL saved in payload:", mainImage.imageUrl);
+        console.log("✅ Main image URL saved in payload:", mainImage.url);
       }
     }
 
@@ -1303,10 +1303,10 @@ const submitProduct = async () => {
             });
             successUploads++;
             console.log(`✅ Additional image file uploaded: ${image.fileName}`);
-          } else if (image.source === "url" && image.imageUrl) {
+          } else if (image.source === "url" && image.url) {
             // Upload from URL
             await api.post(`/products/${productId}/images/url`, {
-              imageUrl: image.imageUrl,
+              imageUrl: image.url,
             });
             successUploads++;
             console.log(`✅ Additional image URL processed`);

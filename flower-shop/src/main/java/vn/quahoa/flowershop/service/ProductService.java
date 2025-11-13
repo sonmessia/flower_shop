@@ -29,6 +29,17 @@ public class ProductService {
     private final FileStorageService fileStorageService;
 
     public Product createProduct(ProductCreateRequest request) {
+        // Debug logging
+        System.out.println("=== CREATE PRODUCT REQUEST ===");
+        System.out.println("Product Code: " + request.getProductCode());
+        System.out.println("Name: " + request.getName());
+        System.out.println("Price: " + request.getPrice());
+        System.out.println("ImageUrl: " + request.getImageUrl());
+        System.out.println("Image (binary): " + (request.getImage() != null ? request.getImage().length + " bytes" : "null"));
+        System.out.println("ImageUrls: " + request.getImageUrls());
+        System.out.println("Images (binary): " + (request.getImages() != null ? request.getImages().size() + " items" : "null"));
+        System.out.println("===============================");
+        
         Category category = categoryRepository.findById(Objects.requireNonNull(request.getCategoryId(), "Category ID must not be null"))
                 .orElseThrow(() -> new ResourceNotFoundException("Category", request.getCategoryId()));
 
@@ -47,10 +58,16 @@ public class ProductService {
         // Set main image from URL or binary data
         if (request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty()) {
             try {
+                System.out.println("Attempting to download main image from URL: " + request.getImageUrl());
                 String relativePath = fileStorageService.saveFileFromUrl(request.getImageUrl(), "products");
-                product.setMainImageUrl(fileStorageService.getPublicUrl(relativePath));
+                String publicUrl = fileStorageService.getPublicUrl(relativePath);
+                product.setMainImageUrl(publicUrl);
+                System.out.println("Successfully saved main image. Public URL: " + publicUrl);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to download and save main image from URL", e);
+                String errorMsg = "Failed to download and save main image from URL: " + request.getImageUrl();
+                System.err.println(errorMsg);
+                e.printStackTrace();
+                throw new RuntimeException(errorMsg, e);
             }
         } else if (request.getImage() != null && request.getImage().length > 0) {
             // For backward compatibility - save from binary data (from base64 or file upload)
@@ -74,17 +91,24 @@ public class ProductService {
             for (String imageUrl : request.getImageUrls()) {
                 if (imageUrl != null && !imageUrl.trim().isEmpty()) {
                     try {
+                        System.out.println("Downloading additional image from URL: " + imageUrl);
                         String relativePath = fileStorageService.saveFileFromUrl(imageUrl, "products");
+                        String publicUrl = fileStorageService.getPublicUrl(relativePath);
                         
                         ProductImage image = new ProductImage();
-                        image.setImageUrl(fileStorageService.getPublicUrl(relativePath));
+                        image.setImageUrl(publicUrl);
                         image.setDisplayOrder(order++);
                         product.addImage(image);
+                        System.out.println("Successfully saved additional image. Public URL: " + publicUrl);
                     } catch (IOException e) {
                         // Log and continue with other images
-                        System.err.println("Failed to download image from URL: " + imageUrl);
+                        System.err.println("Failed to download image from URL: " + imageUrl + ", Error: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
+            }
+            if (order > 0) {
+                product = productRepository.save(product);
             }
         } else if (request.getImages() != null && !request.getImages().isEmpty()) {
             int order = 0;
@@ -100,10 +124,13 @@ public class ProductService {
                         product.addImage(image);
                     } catch (IOException e) {
                         System.err.println("Failed to save image: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
             }
-            product = productRepository.save(product);
+            if (order > 0) {
+                product = productRepository.save(product);
+            }
         }
         
         return product;
@@ -130,6 +157,17 @@ public class ProductService {
     }
 
     public Product updateProduct(Long id, ProductUpdateRequest request) {
+        // Debug logging
+        System.out.println("=== UPDATE PRODUCT REQUEST (ID: " + id + ") ===");
+        System.out.println("Product Code: " + request.getProductCode());
+        System.out.println("Name: " + request.getName());
+        System.out.println("Price: " + request.getPrice());
+        System.out.println("ImageUrl: " + request.getImageUrl());
+        System.out.println("Image (binary): " + (request.getImage() != null ? request.getImage().length + " bytes" : "null"));
+        System.out.println("ImageUrls: " + request.getImageUrls());
+        System.out.println("Images (binary): " + (request.getImages() != null ? request.getImages().size() + " items" : "null"));
+        System.out.println("===============================");
+        
         Product product = getById(id);
         Category category = categoryRepository.findById(Objects.requireNonNull(request.getCategoryId(), "Category ID must not be null"))
                 .orElseThrow(() -> new ResourceNotFoundException("Category", request.getCategoryId()));
@@ -182,16 +220,31 @@ public class ProductService {
      * Helper method to delete image file from storage
      */
     private void deleteImageFile(String imageUrl) {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return;
+        }
+        
         try {
-            // Extract relative path from URL
+            // Extract relative path from public URL
+            // Example: http://localhost:8080/images/products/abc.jpg -> products/abc.jpg
             String baseUrl = fileStorageService.getPublicUrl("");
+            
             if (imageUrl.startsWith(baseUrl)) {
+                // Remove base URL to get relative path
                 String relativePath = imageUrl.substring(baseUrl.length());
+                // Remove leading slash if exists
+                if (relativePath.startsWith("/")) {
+                    relativePath = relativePath.substring(1);
+                }
                 fileStorageService.deleteFile(relativePath);
+                System.out.println("Deleted image file: " + relativePath);
+            } else {
+                System.err.println("Image URL does not match base URL: " + imageUrl);
             }
         } catch (IOException e) {
             // Log error but don't fail the operation
             System.err.println("Failed to delete old image file: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

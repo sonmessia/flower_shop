@@ -110,11 +110,39 @@ public class FileStorageService {
             throw new IllegalArgumentException("Image URL cannot be null or empty");
         }
         
-        java.net.URI uri = java.net.URI.create(imageUrl);
-        String fileName = extractFileNameFromUrl(imageUrl);
+        log.info("Downloading image from URL: {}", imageUrl);
         
-        try (InputStream inputStream = uri.toURL().openStream()) {
-            return saveFileLocally(inputStream, fileName, subDirectory);
+        try {
+            java.net.URI uri = java.net.URI.create(imageUrl);
+            java.net.URL url = uri.toURL();
+            
+            // Mở connection với timeout và User-Agent header
+            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(10000); // 10 seconds
+            connection.setReadTimeout(10000); // 10 seconds
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            connection.setInstanceFollowRedirects(true);
+            
+            int responseCode = connection.getResponseCode();
+            
+            if (responseCode == java.net.HttpURLConnection.HTTP_OK) {
+                String fileName = extractFileNameFromUrl(imageUrl);
+                
+                try (InputStream inputStream = connection.getInputStream()) {
+                    String relativePath = saveFileLocally(inputStream, fileName, subDirectory);
+                    log.info("Successfully downloaded and saved image from URL: {}", imageUrl);
+                    return relativePath;
+                }
+            } else {
+                String errorMsg = String.format("Failed to download image from URL: %s, HTTP code: %d", imageUrl, responseCode);
+                log.error(errorMsg);
+                throw new IOException(errorMsg);
+            }
+        } catch (Exception e) {
+            String errorMsg = String.format("Error downloading image from URL: %s, Error: %s", imageUrl, e.getMessage());
+            log.error(errorMsg, e);
+            throw new IOException(errorMsg, e);
         }
     }
     
@@ -183,9 +211,17 @@ public class FileStorageService {
      */
     public String getPublicUrl(String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) {
-            return null;
+            return storageProperties.getBaseUrl();
         }
         
-        return storageProperties.getBaseUrl() + "/" + relativePath;
+        // Đảm bảo không có double slashes
+        String baseUrl = storageProperties.getBaseUrl();
+        if (baseUrl.endsWith("/") && relativePath.startsWith("/")) {
+            return baseUrl + relativePath.substring(1);
+        } else if (!baseUrl.endsWith("/") && !relativePath.startsWith("/")) {
+            return baseUrl + "/" + relativePath;
+        }
+        
+        return baseUrl + relativePath;
     }
 }

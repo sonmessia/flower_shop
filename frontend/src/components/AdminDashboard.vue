@@ -1200,7 +1200,7 @@ const submitProduct = async () => {
     name: productForm.name.trim(),
     description: productForm.description?.trim() || "",
     price: Number(productForm.price),
-    imageUrl: null, // Will be set by image upload
+    imageUrl: newMainImages.value.length > 0 ? editing.product?.imageUrl || null : null, // Will be set by image upload
     imageUrls: null, // Will be set by image upload
     categoryId: Number(productForm.categoryId),
   };
@@ -1282,6 +1282,12 @@ const submitProduct = async () => {
       } catch (error) {
         console.error("❌ Error uploading additional image:", error);
       }
+    }
+
+    if (existingAdditionalImages.value.length > 0) {
+      payload.imageUrls = existingAdditionalImages.value.map(
+        (img) => img.imageUrl
+      );
     }
 
     if (totalUploads > 0) {

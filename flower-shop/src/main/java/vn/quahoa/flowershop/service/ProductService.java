@@ -122,9 +122,41 @@ public class ProductService {
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         
-        // Only update imageUrl if provided and not null
+        // Handle imageUrl update
         if (request.getImageUrl() != null) {
-            product.setImageUrl(request.getImageUrl());
+            // Check if imageUrl is empty string, which means user wants to clear the image
+            if (request.getImageUrl().trim().isEmpty()) {
+                // Delete old main image if exists
+                if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
+                    imageStorageService.deleteImage(product.getImageUrl());
+                }
+                product.setImageUrl(null);
+            } else {
+                // New image URL provided
+                String newImageUrl = request.getImageUrl();
+                
+                // Check if it's a remote URL that needs to be downloaded
+                if (!newImageUrl.startsWith(imageStorageService.getBaseUrl())) {
+                    try {
+                        // Download and save image locally
+                        String localImageUrl = imageStorageService.saveImageFromUrl(
+                            newImageUrl, product.getId(), true);
+                        
+                        // Delete old main image if exists
+                        if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
+                            imageStorageService.deleteImage(product.getImageUrl());
+                        }
+                        
+                        product.setImageUrl(localImageUrl);
+                    } catch (IOException e) {
+                        // If download fails, keep original URL
+                        product.setImageUrl(newImageUrl);
+                    }
+                } else {
+                    // It's already a local URL, just update directly
+                    product.setImageUrl(newImageUrl);
+                }
+            }
         }
         
         product.setCategory(category);

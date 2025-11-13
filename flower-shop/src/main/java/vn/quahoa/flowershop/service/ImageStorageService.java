@@ -23,6 +23,10 @@ public class ImageStorageService {
 
     private static final String UPLOAD_DIR = "uploads/products";
 
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
     /**
      * Save image from MultipartFile
      */

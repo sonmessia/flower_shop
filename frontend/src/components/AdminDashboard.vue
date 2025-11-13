@@ -704,6 +704,9 @@ const newMainImages = ref([]);
 const existingAdditionalImages = ref([]);
 const newAdditionalImages = ref([]);
 
+// Flag to track if main image should be deleted
+const shouldDeleteMainImage = ref(false);
+
 const categoryForm = reactive({
   name: "",
 });
@@ -1123,6 +1126,7 @@ const handleDeleteMainImage = async (imageId) => {
       // Delete from server if editing existing product
       await api.delete(`/products/${editing.product.id}/images/main`);
       existingMainImage.value = [];
+      shouldDeleteMainImage.value = true;
       showToast("success", "Đã xóa ảnh đại diện");
     }
   } catch (error) {
@@ -1195,12 +1199,41 @@ const submitProduct = async () => {
 
   loading.products = true;
 
+  // Xác định imageUrl cho payload
+  let imageUrlForPayload = null;
+  
+  if (editing.product) {
+    // Nếu đang edit sản phẩm
+    if (newMainImages.value.length > 0) {
+      // Có ảnh mới được chọn
+      const mainImage = newMainImages.value[0];
+      if (mainImage.source === "url" && mainImage.imageUrl) {
+        // Nếu là URL, sử dụng trực tiếp làm imageUrl chính
+        imageUrlForPayload = mainImage.imageUrl;
+      }
+      // Nếu là file, imageUrl sẽ được cập nhật sau khi upload
+    } else if (shouldDeleteMainImage.value) {
+      // Người dùng đã xóa ảnh chính
+      imageUrlForPayload = ""; // Chuỗi rỗng để xóa ảnh
+    }
+    // Nếu không có ảnh mới và không xóa, imageUrlForPayload stays null để backend giữ lại ảnh cũ
+  } else {
+    // Nếu là sản phẩm mới
+    if (newMainImages.value.length > 0) {
+      const mainImage = newMainImages.value[0];
+      if (mainImage.source === "url" && mainImage.imageUrl) {
+        imageUrlForPayload = mainImage.imageUrl;
+      }
+      // Nếu là file, imageUrl sẽ được cập nhật sau khi upload
+    }
+  }
+
   const payload = {
     productCode: productForm.productCode.trim(),
     name: productForm.name.trim(),
     description: productForm.description?.trim() || "",
     price: Number(productForm.price),
-    imageUrl: editing.product?.imageUrl || null, // Keep existing imageUrl
+    imageUrl: imageUrlForPayload,
     imageUrls: null, // Will be handled separately
     categoryId: Number(productForm.categoryId),
   };
@@ -1228,13 +1261,15 @@ const submitProduct = async () => {
     let totalUploads = 0;
     let successUploads = 0;
 
-    // 1. Upload main image ONLY if there's a new image selected
+    // 1. Upload main image nếu có file được chọn
     if (newMainImages.value.length > 0) {
       const mainImage = newMainImages.value[0];
-      totalUploads++;
+      
+      // Chỉ upload nếu là file, còn URL đã được xử lý ở payload
+      if (mainImage.source === "file" && mainImage.file) {
+        totalUploads++;
 
-      try {
-        if (mainImage.source === "file" && mainImage.file) {
+        try {
           // Upload file
           const formData = new FormData();
           formData.append("file", mainImage.file);
@@ -1243,21 +1278,17 @@ const submitProduct = async () => {
           });
           successUploads++;
           console.log("✅ Main image file uploaded");
-        } else if (mainImage.source === "url" && mainImage.imageUrl) {
-          // Upload from URL
-          await api.post(`/products/${productId}/images/main-url`, {
-            imageUrl: mainImage.imageUrl,
-          });
-          successUploads++;
-          console.log("✅ Main image URL processed");
+        } catch (error) {
+          console.error("❌ Error uploading main image:", error);
+          showToast("error", "Không thể tải lên ảnh đại diện");
         }
-      } catch (error) {
-        console.error("❌ Error uploading main image:", error);
-        showToast("error", "Không thể tải lên ảnh đại diện");
+      } else if (mainImage.source === "url" && mainImage.imageUrl) {
+        // URL đã được lưu trong payload, chỉ cần log xác nhận
+        console.log("✅ Main image URL saved in payload:", mainImage.imageUrl);
       }
     }
 
-    // 2. Upload additional images ONLY if there are new images
+    // 2. Upload additional images nếu có
     if (newAdditionalImages.value.length > 0) {
       for (const image of newAdditionalImages.value) {
         totalUploads++;
@@ -1475,6 +1506,7 @@ const startEditProduct = (product) => {
   // Clear new images
   newMainImages.value = [];
   newAdditionalImages.value = [];
+  shouldDeleteMainImage.value = false;
 };
 
 const startEditCategory = (category) => {
@@ -1502,6 +1534,7 @@ const resetProductForm = () => {
   newMainImages.value = [];
   existingAdditionalImages.value = [];
   newAdditionalImages.value = [];
+  shouldDeleteMainImage.value = false;
 
   // Clear ImageUploader components
   if (mainImageUploader.value) {

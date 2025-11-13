@@ -111,7 +111,7 @@ public class BlogService {
         Blog blog = getBlogById(blogId);
 
         try {
-            String imageUrl = imageStorageService.saveImageFromFile(file, blogId, false);
+            String imageUrl = imageStorageService.saveBlogImageFromFile(file, blogId, true);
             blog.setImageUrl(imageUrl);
             blogRepository.save(blog);
             return imageUrl;
@@ -124,14 +124,22 @@ public class BlogService {
      * Upload main/featured image from URL
      */
     public String uploadMainBlogImageFromUrl(Long blogId, String imageUrl) {
+        System.out.println("=== UPLOAD MAIN BLOG IMAGE FROM URL ===");
+        System.out.println("Blog ID: " + blogId);
+        System.out.println("Image URL: " + imageUrl);
+        
         Blog blog = getBlogById(blogId);
 
         try {
-            String savedImageUrl = imageStorageService.saveImageFromUrl(imageUrl, blogId, false);
+            System.out.println("Attempting to download main blog image from URL...");
+            String savedImageUrl = imageStorageService.saveBlogImageFromUrl(imageUrl, blogId, true);
             blog.setImageUrl(savedImageUrl);
             blogRepository.save(blog);
+            System.out.println("✅ Main blog image from URL saved successfully: " + savedImageUrl);
             return savedImageUrl;
         } catch (IOException e) {
+            System.err.println("❌ Failed to upload main blog image from URL: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to upload main blog image from URL", e);
         }
     }
@@ -143,7 +151,7 @@ public class BlogService {
         Blog blog = getBlogById(blogId);
 
         try {
-            String imageUrl = imageStorageService.saveImageFromFile(file, blogId, false);
+            String imageUrl = imageStorageService.saveBlogImageFromFile(file, blogId, false);
 
             BlogImage blogImage = new BlogImage();
             blogImage.setFileName(file.getOriginalFilename());
@@ -164,10 +172,15 @@ public class BlogService {
      * Upload additional image from URL
      */
     public String uploadBlogImageFromUrl(Long blogId, String imageUrl) {
+        System.out.println("=== UPLOAD ADDITIONAL BLOG IMAGE FROM URL ===");
+        System.out.println("Blog ID: " + blogId);
+        System.out.println("Image URL: " + imageUrl);
+        
         Blog blog = getBlogById(blogId);
 
         try {
-            String savedImageUrl = imageStorageService.saveImageFromUrl(imageUrl, blogId, false);
+            System.out.println("Attempting to download additional blog image from URL...");
+            String savedImageUrl = imageStorageService.saveBlogImageFromUrl(imageUrl, blogId, false);
 
             BlogImage blogImage = new BlogImage();
             blogImage.setFileName("URL Image");
@@ -177,9 +190,12 @@ public class BlogService {
             blog.getImages().add(blogImage);
 
             blogRepository.save(blog);
+            System.out.println("✅ Additional blog image from URL saved successfully: " + savedImageUrl);
 
             return savedImageUrl;
         } catch (IOException e) {
+            System.err.println("❌ Failed to upload additional blog image from URL: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to upload blog image from URL", e);
         }
     }

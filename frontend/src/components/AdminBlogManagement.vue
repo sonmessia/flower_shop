@@ -519,10 +519,10 @@ const saveBlog = async () => {
           });
           successUploads++;
           console.log("✅ Main image file uploaded");
-        } else if (mainImage.source === "url" && mainImage.imageUrl) {
+        } else if (mainImage.source === "url" && mainImage.url) {
           // Upload from URL
           await axios.post(apiConfig.blogs.uploadMainImageUrl(blogId), {
-            imageUrl: mainImage.imageUrl,
+            imageUrl: mainImage.url,
           });
           successUploads++;
           console.log("✅ Main image URL processed");
@@ -547,10 +547,10 @@ const saveBlog = async () => {
           });
           successUploads++;
           console.log(`✅ Additional image file uploaded: ${image.fileName}`);
-        } else if (image.source === "url" && image.imageUrl) {
+        } else if (image.source === "url" && image.url) {
           // Upload from URL
           await axios.post(apiConfig.blogs.uploadImageUrl(blogId), {
-            imageUrl: image.imageUrl,
+            imageUrl: image.url,
           });
           successUploads++;
           console.log(`✅ Additional image URL processed`);

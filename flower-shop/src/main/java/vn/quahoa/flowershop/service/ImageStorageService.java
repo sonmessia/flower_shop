@@ -21,19 +21,33 @@ public class ImageStorageService {
     @Value("${app.upload.base-url:http://localhost:8080}")
     private String baseUrl;
 
-    private static final String UPLOAD_DIR = "uploads/products";
+    @Value("${app.storage.local-path:/app/images}")
+    private String localStoragePath;
+
+    private static final String UPLOAD_DIR_PRODUCTS = "products";
+    private static final String UPLOAD_DIR_BLOGS = "blogs";
 
     public String getBaseUrl() {
         return baseUrl;
     }
 
     /**
-     * Save image from MultipartFile
+     * Save image from MultipartFile for products
      */
     public String saveImageFromFile(MultipartFile file, Long productId, boolean isMain) throws IOException {
+        return saveImageFromFileWithType(file, productId, isMain, "product");
+    }
+
+    /**
+     * Save image from MultipartFile with type (product/blog)
+     */
+    private String saveImageFromFileWithType(MultipartFile file, Long entityId, boolean isMain, String type) throws IOException {
+        String baseDir = type.equals("blog") ? UPLOAD_DIR_BLOGS : UPLOAD_DIR_PRODUCTS;
         String subDir = isMain ? "/main" : "";
-        String uploadPath = UPLOAD_DIR + "/" + productId + subDir;
-        Path uploadDir = Paths.get(uploadPath);
+        String relativePathFromImages = baseDir + "/" + entityId + subDir;
+        
+        // Absolute path on disk: /app/images/blogs/1/main
+        Path uploadDir = Paths.get(localStoragePath, relativePathFromImages);
 
         if (!Files.exists(uploadDir)) {
             Files.createDirectories(uploadDir);
@@ -44,14 +58,37 @@ public class ImageStorageService {
         Path filePath = uploadDir.resolve(fileName);
         
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        log.info("Saved {} image from file: {}", type, filePath);
 
-        return baseUrl + "/" + uploadPath + "/" + fileName;
+        // Return URL: http://localhost:8080/images/blogs/1/main/main_123.jpg
+        return baseUrl + "/images/" + relativePathFromImages + "/" + fileName;
     }
 
     /**
-     * Download and save image from URL
+     * Save image from URL for products
      */
     public String saveImageFromUrl(String imageUrl, Long productId, boolean isMain) throws IOException {
+        return saveImageFromUrlWithType(imageUrl, productId, isMain, "product");
+    }
+
+    /**
+     * Save image from file for blogs
+     */
+    public String saveBlogImageFromFile(MultipartFile file, Long blogId, boolean isMain) throws IOException {
+        return saveImageFromFileWithType(file, blogId, isMain, "blog");
+    }
+
+    /**
+     * Save image from URL for blogs
+     */
+    public String saveBlogImageFromUrl(String imageUrl, Long blogId, boolean isMain) throws IOException {
+        return saveImageFromUrlWithType(imageUrl, blogId, isMain, "blog");
+    }
+
+    /**
+     * Download and save image from URL with type (product/blog)
+     */
+    private String saveImageFromUrlWithType(String imageUrl, Long entityId, boolean isMain, String type) throws IOException {
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
             return null;
         }
@@ -61,9 +98,12 @@ public class ImageStorageService {
             return imageUrl;
         }
 
+        String baseDir = type.equals("blog") ? UPLOAD_DIR_BLOGS : UPLOAD_DIR_PRODUCTS;
         String subDir = isMain ? "/main" : "";
-        String uploadPath = UPLOAD_DIR + "/" + productId + subDir;
-        Path uploadDir = Paths.get(uploadPath);
+        String relativePathFromImages = baseDir + "/" + entityId + subDir;
+        
+        // Absolute path on disk: /app/images/blogs/1/main
+        Path uploadDir = Paths.get(localStoragePath, relativePathFromImages);
 
         if (!Files.exists(uploadDir)) {
             Files.createDirectories(uploadDir);
@@ -78,14 +118,15 @@ public class ImageStorageService {
         // Download image from URL
         try (InputStream in = new URL(imageUrl).openStream()) {
             Files.copy(in, filePath, StandardCopyOption.REPLACE_EXISTING);
-            log.info("Downloaded image from URL: {} to {}", imageUrl, filePath);
+            log.info("Downloaded {} image from URL: {} to {}", type, imageUrl, filePath);
         } catch (Exception e) {
-            log.error("Failed to download image from URL: {}", imageUrl, e);
+            log.error("Failed to download {} image from URL: {}", type, imageUrl, e);
             // If download fails, return original URL
             return imageUrl;
         }
 
-        return baseUrl + "/" + uploadPath + "/" + fileName;
+        // Return URL: http://localhost:8080/images/blogs/1/main/main_123.jpg
+        return baseUrl + "/images/" + relativePathFromImages + "/" + fileName;
     }
 
     /**
@@ -129,8 +170,12 @@ public class ImageStorageService {
         }
 
         try {
-            String relativePath = imageUrl.replace(baseUrl + "/", "");
-            Path filePath = Paths.get(relativePath);
+            // URL: http://localhost:8080/images/blogs/1/main/main_123.jpg
+            // Extract: blogs/1/main/main_123.jpg
+            String relativePath = imageUrl.replace(baseUrl + "/images/", "");
+            
+            // Full path: /app/images/blogs/1/main/main_123.jpg
+            Path filePath = Paths.get(localStoragePath, relativePath);
             Files.deleteIfExists(filePath);
             log.info("Deleted image: {}", filePath);
         } catch (Exception e) {

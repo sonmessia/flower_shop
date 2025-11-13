@@ -20,10 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import vn.quahoa.flowershop.dto.ImageUrlRequest;
 import vn.quahoa.flowershop.dto.blog.BlogCreateRequest;
 import vn.quahoa.flowershop.dto.blog.BlogResponse;
 import vn.quahoa.flowershop.dto.blog.BlogUpdateRequest;
-import vn.quahoa.flowershop.dto.product.ImageUrlRequest;
 import vn.quahoa.flowershop.service.BlogService;
 
 @RestController

@@ -58,7 +58,7 @@
 
     <!-- Existing Images Display -->
     <div v-if="existingImages.length > 0" class="images-section">
-      <h4 class="section-title">Chưa có hình ảnh nào</h4>
+      <h4 class="section-title">💾 Hình ảnh đã lưu</h4>
       <div class="images-grid">
         <div
           v-for="img in existingImages"

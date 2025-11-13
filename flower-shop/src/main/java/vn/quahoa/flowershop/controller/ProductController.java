@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import vn.quahoa.flowershop.dto.ImageUrlRequest;
 import vn.quahoa.flowershop.dto.product.ProductCreateRequest;
 import vn.quahoa.flowershop.dto.product.ProductResponse;
 import vn.quahoa.flowershop.dto.product.ProductUpdateRequest;
@@ -77,7 +78,7 @@ public class ProductController {
     // ============================================
 
     /**
-     * Upload an additional image for a product
+     * Upload an additional image for a product (from file)
      */
     @PostMapping("/products/{id}/images")
     public ResponseEntity<String> uploadProductImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
@@ -86,7 +87,16 @@ public class ProductController {
     }
 
     /**
-     * Upload main product image
+     * Upload an additional image for a product (from URL)
+     */
+    @PostMapping("/products/{id}/images/url")
+    public ResponseEntity<String> uploadProductImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
+        String imageUrl = productService.uploadProductImageFromUrl(id, request.getImageUrl());
+        return ResponseEntity.ok(imageUrl);
+    }
+
+    /**
+     * Upload main product image (from file)
      */
     @PostMapping("/products/{id}/images/main")
     public ResponseEntity<String> uploadMainProductImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {

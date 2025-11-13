@@ -297,6 +297,38 @@ public class ProductService {
     }
 
     /**
+     * Upload an additional image for a product from URL
+     */
+    public String uploadProductImageFromUrl(Long productId, String imageUrl) {
+        System.out.println("=== UPLOAD ADDITIONAL IMAGE FROM URL ===");
+        System.out.println("Product ID: " + productId);
+        System.out.println("Image URL: " + imageUrl);
+        
+        Product product = getById(productId);
+
+        try {
+            System.out.println("Attempting to download additional image from URL: " + imageUrl);
+            String relativePath = fileStorageService.saveFileFromUrl(imageUrl, "products");
+            String publicUrl = fileStorageService.getPublicUrl(relativePath);
+            System.out.println("Additional image saved successfully. Public URL: " + publicUrl);
+            
+            ProductImage productImage = new ProductImage();
+            productImage.setFileName("Image from URL");
+            productImage.setImageUrl(publicUrl);
+            product.addImage(productImage);
+
+            productRepository.save(product);
+            System.out.println("✅ Additional image from URL processed successfully");
+
+            return publicUrl;
+        } catch (IOException e) {
+            System.err.println("❌ Failed to upload additional image from URL: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to upload product image from URL: " + imageUrl, e);
+        }
+    }
+
+    /**
      * Upload main product image
      */
     public String uploadMainProductImage(Long productId, MultipartFile file) {

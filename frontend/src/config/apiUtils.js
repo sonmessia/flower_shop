@@ -110,7 +110,7 @@ export async function uploadMainBlogImage(blogId, file, token) {
   if (!response.ok) {
     throw new Error('Failed to upload main blog image')
   }
-  
+  console.log("Main blog image upload response:", response);
   return await response.text()
 }
 

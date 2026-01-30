@@ -1,11 +1,9 @@
-version: "3.8"
-
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: flowershop-db-prod
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -29,15 +27,16 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Spring Boot Backend
+  # Spring Boot Backend - Production
   backend:
     build:
       context: ./flower-shop
       dockerfile: Dockerfile
+      target: production
     container_name: flowershop-backend-prod
     restart: always
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -66,12 +65,49 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    profiles:
+      - production
 
-  # Vue.js Frontend
+  # Spring Boot Backend - Development
+  backend-dev:
+    build:
+      context: ./flower-shop
+      dockerfile: Dockerfile
+      target: development
+    container_name: flowershop-backend-dev
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      STORAGE_LOCAL_PATH: /app/images
+      STORAGE_BASE_URL: http://localhost:8080/images
+    volumes:
+      # Bind mount source code for hot-reload
+      - ./flower-shop/src:/app/src:rw
+      - ./flower-shop/pom.xml:/app/pom.xml:rw
+      # Persist uploaded images
+      - images_data:/app/images
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - flowershop-network
+    profiles:
+      - development
+
+  # Vue.js Frontend - Production
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
     container_name: flowershop-frontend-prod
     restart: always
     ports:
@@ -91,6 +127,36 @@ services:
     volumes:
       # For SSL certificates (if using Let's Encrypt)
       - ./ssl:/etc/nginx/ssl:ro
+    profiles:
+      - production
+
+  # Vue.js Frontend - Development
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: flowershop-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE: ${VUE_APP_API_BASE}
+    volumes:
+      # Bind mount source code for hot-reload
+      - ./frontend/src:/app/src:rw
+      - ./frontend/public:/app/public:rw
+      - ./frontend/index.html:/app/index.html:rw
+      - ./frontend/vite.config.js:/app/vite.config.js:rw
+      - ./frontend/package.json:/app/package.json:rw
+      # Mount node_modules to prevent conflicts
+      - /app/node_modules
+    depends_on:
+      - backend-dev
+    networks:
+      - flowershop-network
+    profiles:
+      - development
 
 networks:
   flowershop-network:

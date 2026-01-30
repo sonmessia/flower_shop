@@ -1,3 +1,20 @@
+# Development stage
+FROM node:18-alpine AS development
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Expose port for Vite dev server
+EXPOSE 5173
+
+# Start development server with hot-reload
+CMD ["npm", "run", "dev"]
+
 # Build stage
 FROM node:18-alpine AS build
 
@@ -16,7 +33,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:alpine AS production
 WORKDIR /usr/share/nginx/html
 
 # Remove default nginx static assets

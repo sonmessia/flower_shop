@@ -3,7 +3,7 @@ version: "3.8"
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: flowershop-db-prod
     restart: always
     environment:
@@ -34,6 +34,7 @@ services:
     build:
       context: ./flower-shop
       dockerfile: Dockerfile
+      target: production
     container_name: flowershop-backend-prod
     restart: always
     ports:
@@ -46,6 +47,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: prod
+      STORAGE_LOCAL_PATH: /app/images
+      STORAGE_BASE_URL: http://localhost/images
+    volumes:
+      - images_data:/app/images
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,6 +73,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
     container_name: flowershop-frontend-prod
     restart: always
     ports:
@@ -94,4 +100,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  images_data:
     driver: local

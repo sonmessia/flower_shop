@@ -36,7 +36,7 @@ services:
     container_name: flowershop-backend-prod
     restart: always
     ports:
-      - "8081:8080"
+      - "8080:8080"
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -46,7 +46,7 @@ services:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: prod
       STORAGE_LOCAL_PATH: /app/images
-      STORAGE_BASE_URL: http://localhost:8080/images
+      STORAGE_BASE_URL: http://localhost/images
     volumes:
       - images_data:/app/images
     depends_on:
@@ -111,12 +111,13 @@ services:
     container_name: flowershop-frontend-prod
     restart: always
     ports:
-      - "84:80"
+      - "80:80"
       - "443:443"
     environment:
       VUE_APP_API_BASE: ${VUE_APP_API_BASE}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - flowershop-network
     logging:

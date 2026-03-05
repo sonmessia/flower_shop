@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = process.env.VUE_APP_API_BASE || 'http://localhost:8080/api'
+const API_BASE_URL = process.env.VUE_APP_API_BASE || 'http://localhost:8081/api'
 
 export default {
   baseURL: API_BASE_URL,

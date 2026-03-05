@@ -3,17 +3,16 @@ FROM node:18-alpine AS development
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and install dependencies
+# Source code is bind-mounted from host for hot-reload
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Expose port for Vite dev server
+# Expose Vue CLI dev server port (matches docker-compose port mapping 5173:5173)
 EXPOSE 5173
 
-# Start development server with hot-reload
-CMD ["npm", "run", "dev"]
+# Start development server with hot-reload accessible from outside the container
+CMD ["npm", "run", "serve", "--", "--port", "5173", "--host", "0.0.0.0"]
 
 # Build stage
 FROM node:18-alpine AS build

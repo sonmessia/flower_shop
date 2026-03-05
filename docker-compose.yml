@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: flowershop-db-prod
     restart: unless-stopped
     environment:
@@ -87,7 +87,7 @@ services:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: dev
       STORAGE_LOCAL_PATH: /app/images
-      STORAGE_BASE_URL: http://localhost:8080/images
+      STORAGE_BASE_URL: http://localhost:8081/images
     volumes:
       # Bind mount source code for hot-reload
       - ./flower-shop/src:/app/src:rw
@@ -141,14 +141,15 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_BASE: ${VUE_APP_API_BASE}
+      VUE_APP_API_BASE: ${VUE_APP_API_BASE:-http://localhost:8081/api}
     volumes:
       # Bind mount source code for hot-reload
       - ./frontend/src:/app/src:rw
       - ./frontend/public:/app/public:rw
-      - ./frontend/index.html:/app/index.html:rw
-      - ./frontend/vite.config.js:/app/vite.config.js:rw
       - ./frontend/package.json:/app/package.json:rw
+      # Mount env files so Vue CLI picks up VUE_APP_* at compile time
+      - ./frontend/.env:/app/.env:ro
+      - ./frontend/.env.development:/app/.env.development:ro
       # Mount node_modules to prevent conflicts
       - /app/node_modules
     depends_on:

@@ -17,25 +17,6 @@
           <i class="icon">📝</i>
           <span>Blog</span>
         </router-link>
-
-        <div class="nav-dropdown">
-          <button class="nav-link dropdown-toggle" @click="toggleCategories">
-            <i class="icon">📂</i>
-            <span>Danh mục</span>
-            <i class="arrow" :class="{ open: showCategories }">▼</i>
-          </button>
-          <div v-if="showCategories" class="dropdown-menu">
-            <a
-              v-for="category in categories"
-              :key="category.id"
-              href="#"
-              class="dropdown-item"
-              @click.prevent="selectCategory(category)"
-            >
-              {{ category.name }}
-            </a>
-          </div>
-        </div>
       </div>
 
       <!-- Search Bar -->
@@ -121,6 +102,25 @@
         </div>
       </div>
 
+      <div class="auth-actions">
+        <template v-if="userSession">
+          <router-link to="/account" class="user-badge user-badge-link">
+            {{ userDisplayName }}
+          </router-link>
+          <button class="auth-btn logout-btn" @click="handleUserLogout">
+            Đăng xuất
+          </button>
+        </template>
+        <template v-else>
+          <router-link to="/register" class="auth-btn register-btn">
+            Đăng ký
+          </router-link>
+          <router-link to="/login" class="auth-btn login-btn">
+            Đăng nhập
+          </router-link>
+        </template>
+      </div>
+
       <!-- Admin Link
       <router-link to="/admin/login" class="admin-link">
         <i class="icon">👤</i>
@@ -131,32 +131,60 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import axios from "axios";
 import API from "../config/api";
 
+const router = useRouter();
+
 const searchQuery = ref("");
-const showCategories = ref(false);
-const categories = ref([]);
 const searchResults = ref([]);
 const showSearchResults = ref(false);
 const isSearching = ref(false);
+const userSession = ref(null);
 let searchTimeout = null;
 
-const emit = defineEmits(["search", "select-category"]);
+const emit = defineEmits(["search"]);
 
-onMounted(async () => {
-  await fetchCategories();
-  document.addEventListener("click", handleClickOutside);
+const userDisplayName = computed(() => {
+  if (!userSession.value) return "";
+  return userSession.value.fullName || userSession.value.email || "Tài khoản";
 });
 
-const fetchCategories = async () => {
+onMounted(async () => {
+  syncUserSession();
+  document.addEventListener("click", handleClickOutside);
+  window.addEventListener("storage", handleUserAuthChanged);
+  window.addEventListener("user-auth-changed", handleUserAuthChanged);
+});
+
+onUnmounted(() => {
+  clearTimeout(searchTimeout);
+  document.removeEventListener("click", handleClickOutside);
+  window.removeEventListener("storage", handleUserAuthChanged);
+  window.removeEventListener("user-auth-changed", handleUserAuthChanged);
+});
+
+const syncUserSession = () => {
   try {
-    const response = await axios.get(API.categories.getAll());
-    categories.value = response.data;
+    const stored = localStorage.getItem("user");
+    userSession.value = stored ? JSON.parse(stored) : null;
   } catch (error) {
-    console.error("Lỗi khi tải danh mục:", error);
+    console.error("Không thể đọc thông tin user trong localStorage", error);
+    userSession.value = null;
   }
+};
+
+const handleUserAuthChanged = () => {
+  syncUserSession();
+};
+
+const handleUserLogout = () => {
+  localStorage.removeItem("user");
+  userSession.value = null;
+  window.dispatchEvent(new Event("user-auth-changed"));
+  router.push("/");
 };
 
 const handleSearchInput = () => {
@@ -197,19 +225,9 @@ const performSearch = async () => {
   }
 };
 
-const toggleCategories = () => {
-  showCategories.value = !showCategories.value;
-  showSearchResults.value = false;
-};
-
 const handleSearch = () => {
   closeSearchDropdown();
   emit("search", searchQuery.value);
-};
-
-const selectCategory = (category) => {
-  emit("select-category", category);
-  showCategories.value = false;
 };
 
 const closeSearchDropdown = () => {
@@ -225,9 +243,6 @@ const formatPrice = (price) => {
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
-  if (!event.target.closest(".nav-dropdown")) {
-    showCategories.value = false;
-  }
   if (!event.target.closest(".navbar-search")) {
     showSearchResults.value = false;
   }
@@ -311,39 +326,6 @@ const handleClickOutside = (event) => {
   font-size: 1.2rem;
 }
 
-.nav-dropdown {
-  position: relative;
-}
-
-.dropdown-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.arrow {
-  font-size: 0.7rem;
-  transition: transform 0.3s ease;
-  margin-left: 0.2rem;
-}
-
-.arrow.open {
-  transform: rotate(180deg);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(243, 109, 161, 0.15);
-  min-width: 200px;
-  overflow: hidden;
-  border: 1px solid var(--pink-200);
-  animation: slideDown 0.3s ease;
-}
-
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -353,20 +335,6 @@ const handleClickOutside = (event) => {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.dropdown-item {
-  display: block;
-  padding: 0.8rem 1.2rem;
-  color: var(--pink-700);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.dropdown-item:hover {
-  background: var(--pink-100);
-  color: var(--pink-600);
 }
 
 .navbar-search {
@@ -557,6 +525,76 @@ const handleClickOutside = (event) => {
   border-color: var(--pink-400);
 }
 
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.user-badge {
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--pink-300);
+  color: var(--pink-700);
+  background: var(--pink-75);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-badge-link {
+  text-decoration: none;
+  transition: all 0.22s ease;
+}
+
+.user-badge-link:hover {
+  background: var(--pink-100);
+}
+
+.auth-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 0.55rem 0.95rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+
+.login-btn {
+  color: white;
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-400));
+}
+
+.register-btn {
+  color: var(--pink-700);
+  border: 1px solid var(--pink-300);
+  background: white;
+}
+
+.register-btn:hover {
+  background: var(--pink-100);
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(243, 109, 161, 0.28);
+}
+
+.logout-btn {
+  color: var(--pink-700);
+  border: 1px solid var(--pink-300);
+  background: white;
+}
+
+.logout-btn:hover {
+  background: var(--pink-100);
+}
+
 @media (max-width: 968px) {
   .navbar-container {
     flex-wrap: wrap;
@@ -572,6 +610,10 @@ const handleClickOutside = (event) => {
     order: 3;
     flex-basis: 100%;
     max-width: 100%;
+  }
+
+  .auth-actions {
+    margin-left: auto;
   }
 }
 </style>

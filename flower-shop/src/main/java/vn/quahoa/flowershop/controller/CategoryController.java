@@ -24,34 +24,32 @@ import vn.quahoa.flowershop.service.CategoryService;
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private final CategoryService categoryService;
+  private final CategoryService categoryService;
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Category createCategory(@Valid @RequestBody CategoryRequest request) {
-        return categoryService.createCategory(request);
-    }
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  public Category createCategory(@Valid @RequestBody CategoryRequest request) {
+    return categoryService.createCategory(request);
+  }
 
-    @GetMapping
-    public List<Category> getAllCategories() {
-        return categoryService.findAll();
-    }
+  @GetMapping
+  public List<Category> getAllCategories() {
+    return categoryService.findAll();
+  }
 
-    @GetMapping("/{id}")
-    public Category getCategory(@PathVariable Long id) {
-        return categoryService.getById(id);
-    }
+  @GetMapping("/{id}")
+  public Category getCategory(@PathVariable Long id) {
+    return categoryService.getById(id);
+  }
 
-    @PutMapping("/{id}")
-    public Category updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
-        return categoryService.updateCategory(id, request);
-    }
+  @PutMapping("/{id}")
+  public Category updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
+    return categoryService.updateCategory(id, request);
+  }
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCategory(@PathVariable Long id) {
-        categoryService.deleteCategory(id);
-    }
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteCategory(@PathVariable Long id) {
+    categoryService.deleteCategory(id);
+  }
 }
-
-

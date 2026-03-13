@@ -7,12 +7,21 @@
       </div>
 
       <div class="quick-nav">
-        <router-link to="/admin/dashboard" class="nav-btn">📊 Dashboard</router-link>
-        <router-link to="/admin/orders" class="nav-btn active">📦 Đơn hàng</router-link>
+        <router-link to="/admin/dashboard" class="nav-btn"
+          >📊 Dashboard</router-link
+        >
+        <router-link to="/admin/orders" class="nav-btn active"
+          >📦 Đơn hàng</router-link
+        >
         <router-link to="/" class="nav-btn">🏠 Trang chủ</router-link>
       </div>
 
-      <button type="button" class="refresh-btn" :disabled="loading" @click="fetchOrders">
+      <button
+        type="button"
+        class="refresh-btn"
+        :disabled="loading"
+        @click="fetchOrders"
+      >
         {{ loading ? "Đang tải..." : "Làm mới" }}
       </button>
 
@@ -28,7 +37,9 @@
           <p>Theo dõi và cập nhật trạng thái xử lý đơn của khách hàng.</p>
         </div>
         <div class="header-meta">
-          <span>Tổng đơn: <strong>{{ orders.length }}</strong></span>
+          <span
+            >Tổng đơn: <strong>{{ orders.length }}</strong></span
+          >
         </div>
       </header>
 
@@ -50,7 +61,11 @@
           Trạng thái
           <select v-model="statusFilter">
             <option value="ALL">Tất cả</option>
-            <option v-for="status in statusOptions" :key="status" :value="status">
+            <option
+              v-for="status in statusOptions"
+              :key="status"
+              :value="status"
+            >
               {{ statusLabel(status) }}
             </option>
           </select>
@@ -67,7 +82,11 @@
       </section>
 
       <section v-else class="orders-list">
-        <article v-for="order in filteredOrders" :key="order.id" class="order-card">
+        <article
+          v-for="order in filteredOrders"
+          :key="order.id"
+          class="order-card"
+        >
           <header class="order-header">
             <div>
               <h2>Đơn #{{ order.id }}</h2>
@@ -81,7 +100,11 @@
                 :disabled="updatingOrderId === order.id"
                 @change="onStatusChange(order, $event.target.value)"
               >
-                <option v-for="status in statusOptions" :key="status" :value="status">
+                <option
+                  v-for="status in statusOptions"
+                  :key="status"
+                  :value="status"
+                >
                   {{ statusLabel(status) }}
                 </option>
               </select>
@@ -90,26 +113,51 @@
 
           <div class="shipping-info">
             <p><strong>Người nhận:</strong> {{ order.shippingName }}</p>
-            <p v-if="order.shippingPhone"><strong>SĐT:</strong> {{ order.shippingPhone }}</p>
+            <p v-if="order.shippingPhone">
+              <strong>SĐT:</strong> {{ order.shippingPhone }}
+            </p>
             <p>
               <strong>Địa chỉ:</strong>
-              {{ [order.shippingStreet, order.shippingCity, order.shippingPostalCode].filter(Boolean).join(", ") }}
+              {{
+                [
+                  order.shippingStreet,
+                  order.shippingCity,
+                  order.shippingPostalCode,
+                ]
+                  .filter(Boolean)
+                  .join(", ")
+              }}
             </p>
             <p v-if="order.note"><strong>Ghi chú:</strong> {{ order.note }}</p>
-            <p v-if="order.cancellationMessage" class="cancel-message">
-              <strong>Thông báo cho khách:</strong> {{ order.cancellationMessage }}
+            <p v-if="showUserNotification(order)" class="cancel-message">
+              <strong>Thông báo cho khách:</strong>
+              {{ order.cancellationMessage }}
             </p>
-            <p v-if="order.cancellationBy" class="cancel-by">
-              <strong>Hủy bởi:</strong> {{ order.cancellationBy }}
+            <p
+              v-if="showUserNotification(order) && order.cancellationBy"
+              class="cancel-by"
+            >
+              <strong
+                >Hủy bởi: {{ cancellationActorLabel(order.cancellationBy) }}</strong
+              >
+              <span v-if="formatCancellationBy(order.cancellationBy)">
+                ({{ formatCancellationBy(order.cancellationBy) }})
+              </span>
             </p>
           </div>
 
           <div class="items">
             <div v-for="item in order.items" :key="item.id" class="item-row">
-              <img :src="item.imageUrl || fallbackImage" :alt="item.productName" @error="onImageError" />
+              <img
+                :src="item.imageUrl || fallbackImage"
+                :alt="item.productName"
+                @error="onImageError"
+              />
               <div>
                 <p class="item-name">{{ item.productName }}</p>
-                <p class="item-sub">{{ item.quantity }} x {{ formatPrice(item.unitPrice) }}</p>
+                <p class="item-sub">
+                  {{ item.quantity }} x {{ formatPrice(item.unitPrice) }}
+                </p>
               </div>
               <strong>{{ formatPrice(item.lineTotal) }}</strong>
             </div>
@@ -127,7 +175,8 @@ import axios from "../config/axiosConfig";
 import API from "../config/api";
 
 const router = useRouter();
-const fallbackImage = "https://via.placeholder.com/300x300/FFE1F0/F36DA1?text=Flower";
+const fallbackImage =
+  "https://via.placeholder.com/300x300/FFE1F0/F36DA1?text=Flower";
 
 const orders = ref([]);
 const loading = ref(true);
@@ -136,7 +185,14 @@ const updatingOrderId = ref(null);
 const searchQuery = ref("");
 const statusFilter = ref("ALL");
 
-const statusOptions = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED"];
+const statusOptions = [
+  "PENDING",
+  "CONFIRMED",
+  "PROCESSING",
+  "SHIPPED",
+  "COMPLETED",
+  "CANCELLED",
+];
 
 const filteredOrders = computed(() => {
   let result = [...orders.value];
@@ -147,9 +203,10 @@ const filteredOrders = computed(() => {
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    result = result.filter((order) =>
-      String(order.id).includes(query) ||
-      (order.shippingName || "").toLowerCase().includes(query)
+    result = result.filter(
+      (order) =>
+        String(order.id).includes(query) ||
+        (order.shippingName || "").toLowerCase().includes(query)
     );
   }
 
@@ -248,6 +305,30 @@ const formatDate = (value) => {
 
 const onImageError = (event) => {
   event.target.src = fallbackImage;
+};
+
+const showUserNotification = (order) => {
+  if (order.status !== "CANCELLED" || !order.cancellationMessage) return false;
+  const by = order.cancellationBy || "";
+  if (by.startsWith("USER:")) return true;
+  if (by.startsWith("ADMIN:")) return false;
+
+  // Backward compatibility for old records without role prefix.
+  return order.cancellationMessage.startsWith("Lý do hủy đơn:");
+};
+
+const formatCancellationBy = (value) => {
+  if (!value) return "";
+  if (value.startsWith("ADMIN:")) return value.slice("ADMIN:".length);
+  if (value.startsWith("USER:")) return value.slice("USER:".length);
+  return value;
+};
+
+const cancellationActorLabel = (value) => {
+  if (!value) return "Hệ thống";
+  if (value.startsWith("ADMIN:")) return "Admin";
+  if (value.startsWith("USER:")) return "Khách hàng";
+  return "Hệ thống";
 };
 
 onMounted(async () => {

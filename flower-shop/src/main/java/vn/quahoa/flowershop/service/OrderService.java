@@ -112,7 +112,7 @@ public class OrderService {
                 throw new ValidationException("cancelReason", "cancelReason is required when cancelling order");
             }
             order.setCancellationMessage(cancelReason.trim());
-            order.setCancellationBy(resolveCancellationActor("ADMIN"));
+            order.setCancellationBy("ADMIN:" + resolveCancellationActor("SYSTEM"));
         }
 
         order.setStatus(status);
@@ -134,7 +134,8 @@ public class OrderService {
 
         order.setStatus(OrderStatus.CANCELLED);
         order.setCancellationMessage("Customer cancellation reason: " + cancelReason.trim());
-        order.setCancellationBy(cancelledBy != null && !cancelledBy.isBlank() ? cancelledBy : "CUSTOMER");
+        String actor = cancelledBy != null && !cancelledBy.isBlank() ? cancelledBy : "CUSTOMER";
+        order.setCancellationBy("USER:" + actor);
 
         Order updated = orderRepository.save(order);
         return toOrderResponse(updated);

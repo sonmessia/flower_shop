@@ -46,11 +46,14 @@
               <strong>Địa chỉ:</strong>
               {{ [order.shippingStreet, order.shippingCity, order.shippingPostalCode].filter(Boolean).join(", ") }}
             </p>
-            <p v-if="order.cancellationMessage" class="cancel-message">
+            <p v-if="showAdminNotification(order)" class="cancel-message">
               <strong>Thông báo:</strong> {{ order.cancellationMessage }}
             </p>
-            <p v-if="order.cancellationBy" class="cancel-by">
-              <strong>Hủy bởi:</strong> {{ order.cancellationBy }}
+            <p v-if="showAdminNotification(order) && order.cancellationBy" class="cancel-by">
+              <strong>Hủy bởi: {{ cancellationActorLabel(order.cancellationBy) }}</strong>
+              <span v-if="formatCancellationBy(order.cancellationBy)">
+                ({{ formatCancellationBy(order.cancellationBy) }})
+              </span>
             </p>
           </div>
 
@@ -154,6 +157,30 @@ const onImageError = (event) => {
 
 const canUserCancel = (order) => {
   return order.status === "PENDING" || order.status === "CONFIRMED";
+};
+
+const showAdminNotification = (order) => {
+  if (order.status !== "CANCELLED" || !order.cancellationMessage) return false;
+  const by = order.cancellationBy || "";
+  if (by.startsWith("ADMIN:")) return true;
+  if (by.startsWith("USER:")) return false;
+
+  // Backward compatibility for old records without role prefix.
+  return !order.cancellationMessage.startsWith("Customer cancellation reason:");
+};
+
+const formatCancellationBy = (value) => {
+  if (!value) return "";
+  if (value.startsWith("ADMIN:")) return value.slice("ADMIN:".length);
+  if (value.startsWith("USER:")) return value.slice("USER:".length);
+  return value;
+};
+
+const cancellationActorLabel = (value) => {
+  if (!value) return "Hệ thống";
+  if (value.startsWith("ADMIN:")) return "Admin";
+  if (value.startsWith("USER:")) return "Khách hàng";
+  return "Hệ thống";
 };
 
 const cancelOrder = async (order) => {

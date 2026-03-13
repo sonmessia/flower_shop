@@ -69,6 +69,8 @@ public class SecurityConfig {
             .requestMatchers("/api/admins/**").hasRole("ADMIN")
             // User protected endpoints
             .requestMatchers("/api/users/**").hasRole("USER")
+            .requestMatchers("/api/cart/**").hasRole("USER")
+            .requestMatchers("/api/orders/**").hasRole("USER")
             // Other protected endpoints
             .anyRequest().authenticated())
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

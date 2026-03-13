@@ -91,6 +91,8 @@
           </div>
         </div>
 
+        <p v-if="buyNowMessage" class="buy-now-message">{{ buyNowMessage }}</p>
+
         <!-- Products Grid -->
         <div v-if="loading" class="loading">
           <div class="spinner"></div>
@@ -152,6 +154,13 @@
                   @click.stop="goToProduct(product.id)"
                 >
                   Xem chi tiết
+                </button>
+                <button
+                  class="product-btn buy-now-btn"
+                  :disabled="buyNowLoadingId === product.id"
+                  @click.stop="buyNow(product)"
+                >
+                  {{ buyNowLoadingId === product.id ? "Đang xử lý..." : "Mua ngay" }}
                 </button>
               </div>
             </div>
@@ -224,6 +233,7 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 import SiteNavbar from "./SiteNavbar.vue";
 import API from "../config/api";
+import userAxios from "../config/userAxios";
 
 const router = useRouter();
 
@@ -236,6 +246,8 @@ const selectedCategoryIds = ref([]);
 const showCategoryMenu = ref(false);
 const sortBy = ref("");
 const productsSection = ref(null);
+const buyNowLoadingId = ref(null);
+const buyNowMessage = ref("");
 
 // Pagination
 const currentPage = ref(1);
@@ -412,6 +424,31 @@ const handleImageError = (e) => {
 
 const goToProduct = (productId) => {
   router.push(`/products/${productId}`);
+};
+
+const buyNow = async (product) => {
+  const storedUser = localStorage.getItem("user");
+  if (!storedUser) {
+    router.push({ path: "/login", query: { redirect: "/cart" } });
+    return;
+  }
+
+  buyNowLoadingId.value = product.id;
+  buyNowMessage.value = "";
+
+  try {
+    await userAxios.post(API.cart.addItem(), {
+      productId: product.id,
+      quantity: 1,
+    });
+    window.dispatchEvent(new Event("cart-updated"));
+    router.push("/cart");
+  } catch (error) {
+    const message = error.response?.data?.message;
+    buyNowMessage.value = message || "Không thể thêm sản phẩm vào giỏ hàng.";
+  } finally {
+    buyNowLoadingId.value = null;
+  }
 };
 </script>
 
@@ -757,9 +794,11 @@ const goToProduct = (productId) => {
 
 .product-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 0.6rem;
   align-items: center;
   margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .product-price {
@@ -782,6 +821,25 @@ const goToProduct = (productId) => {
 .product-btn:hover {
   background: var(--pink-500);
   color: white;
+}
+
+.buy-now-btn {
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-400));
+  color: white;
+}
+
+.buy-now-btn:hover:enabled {
+  background: linear-gradient(135deg, var(--pink-600), var(--pink-500));
+}
+
+.buy-now-message {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: #d6456b;
+  background: rgba(255, 237, 244, 0.95);
+  border: 1px solid rgba(214, 69, 107, 0.2);
+  font-weight: 600;
 }
 
 /* Pagination */

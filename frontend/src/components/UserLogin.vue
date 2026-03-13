@@ -64,11 +64,12 @@
 
 <script setup>
 import { reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import API from "../config/api";
 
 const router = useRouter();
+const route = useRoute();
 
 const form = reactive({
   email: "",
@@ -109,7 +110,8 @@ const handleSubmit = async () => {
     );
 
     window.dispatchEvent(new Event("user-auth-changed"));
-    router.push("/");
+    const redirectPath = typeof route.query.redirect === "string" ? route.query.redirect : "/";
+    router.push(redirectPath);
     form.password = "";
   } catch (err) {
     if (err.response?.data?.message) {

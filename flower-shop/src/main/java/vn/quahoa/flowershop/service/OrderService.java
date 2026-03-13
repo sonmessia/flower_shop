@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,7 @@ import vn.quahoa.flowershop.dto.order.OrderItemResponse;
 import vn.quahoa.flowershop.dto.order.OrderResponse;
 import vn.quahoa.flowershop.exception.ResourceNotFoundException;
 import vn.quahoa.flowershop.exception.ValidationException;
+import vn.quahoa.flowershop.model.Admin;
 import vn.quahoa.flowershop.model.CartItem;
 import vn.quahoa.flowershop.model.Order;
 import vn.quahoa.flowershop.model.OrderItem;
@@ -100,13 +103,66 @@ public class OrderService {
             .toList();
     }
 
-    public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
+    public OrderResponse updateOrderStatus(Long orderId, OrderStatus status, String cancelReason) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        if (status == OrderStatus.CANCELLED) {
+            if (cancelReason == null || cancelReason.trim().isEmpty()) {
+                throw new ValidationException("cancelReason", "cancelReason is required when cancelling order");
+            }
+            order.setCancellationMessage(cancelReason.trim());
+            order.setCancellationBy(resolveCancellationActor("ADMIN"));
+        }
 
         order.setStatus(status);
         Order updated = orderRepository.save(order);
         return toOrderResponse(updated);
+    }
+
+    public OrderResponse cancelMyOrder(Long userId, Long orderId, String cancelReason, String cancelledBy) {
+        Order order = orderRepository.findByIdAndUser_Id(orderId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        if (!canUserCancel(order.getStatus())) {
+            throw new ValidationException("status", "Order cannot be cancelled once processing has started");
+        }
+
+        if (cancelReason == null || cancelReason.trim().isEmpty()) {
+            throw new ValidationException("cancelReason", "cancelReason is required");
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setCancellationMessage("Customer cancellation reason: " + cancelReason.trim());
+        order.setCancellationBy(cancelledBy != null && !cancelledBy.isBlank() ? cancelledBy : "CUSTOMER");
+
+        Order updated = orderRepository.save(order);
+        return toOrderResponse(updated);
+    }
+
+    private boolean canUserCancel(OrderStatus status) {
+        return status == OrderStatus.PENDING || status == OrderStatus.CONFIRMED;
+    }
+
+    private String resolveCancellationActor(String fallback) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return fallback;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Admin admin && admin.getUsername() != null && !admin.getUsername().isBlank()) {
+            return admin.getUsername();
+        }
+        if (principal instanceof User user) {
+            if (user.getFullName() != null && !user.getFullName().isBlank()) {
+                return user.getFullName();
+            }
+            if (user.getEmail() != null && !user.getEmail().isBlank()) {
+                return user.getEmail();
+            }
+        }
+        return fallback;
     }
 
     private OrderResponse toOrderResponse(Order order) {
@@ -142,6 +198,8 @@ public class OrderService {
             .shippingCity(order.getShippingCity())
             .shippingPostalCode(order.getShippingPostalCode())
             .note(order.getNote())
+            .cancellationMessage(order.getCancellationMessage())
+            .cancellationBy(order.getCancellationBy())
             .createdAt(order.getCreatedAt())
             .updatedAt(order.getUpdatedAt())
             .items(itemResponses)

@@ -86,6 +86,19 @@
               {{ formatPrice(product.price) }}
             </div>
 
+            <div class="purchase-box">
+              <div class="qty-controls">
+                <button @click="decreaseCartQty" :disabled="cartQuantity <= 1">-</button>
+                <span>{{ cartQuantity }}</span>
+                <button @click="increaseCartQty">+</button>
+              </div>
+              <button class="add-cart-btn" @click="addToCart" :disabled="addingToCart">
+                {{ addingToCart ? "Đang thêm..." : "Thêm vào giỏ hàng" }}
+              </button>
+            </div>
+
+            <p v-if="cartMessage" class="cart-message">{{ cartMessage }}</p>
+
             <div class="product-description">
               <h3>
                 <svg
@@ -409,6 +422,7 @@ import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import SiteNavbar from "./SiteNavbar.vue";
 import API from "../config/api";
+import userAxios from "../config/userAxios";
 
 const route = useRoute();
 const router = useRouter();
@@ -422,6 +436,9 @@ const topOfPage = ref(null);
 const productsSlider = ref(null);
 const scrollPosition = ref(0);
 const maxScroll = ref(0);
+const cartQuantity = ref(1);
+const addingToCart = ref(false);
+const cartMessage = ref("");
 
 const productId = computed(() => route.params.id);
 
@@ -577,6 +594,43 @@ const shareProduct = () => {
     // Fallback: copy to clipboard
     navigator.clipboard.writeText(window.location.href);
     alert("Đã sao chép link sản phẩm!");
+  }
+};
+
+const increaseCartQty = () => {
+  cartQuantity.value += 1;
+};
+
+const decreaseCartQty = () => {
+  if (cartQuantity.value > 1) {
+    cartQuantity.value -= 1;
+  }
+};
+
+const addToCart = async () => {
+  const rawUser = localStorage.getItem("user");
+  if (!rawUser) {
+    router.push({ path: "/login", query: { redirect: route.fullPath } });
+    return;
+  }
+
+  if (!product.value?.id) return;
+
+  addingToCart.value = true;
+  cartMessage.value = "";
+
+  try {
+    await userAxios.post(API.cart.addItem(), {
+      productId: product.value.id,
+      quantity: cartQuantity.value,
+    });
+    window.dispatchEvent(new Event("cart-updated"));
+    cartMessage.value = "Đã thêm sản phẩm vào giỏ hàng.";
+  } catch (error) {
+    const message = error.response?.data?.message;
+    cartMessage.value = message || "Không thể thêm sản phẩm vào giỏ hàng.";
+  } finally {
+    addingToCart.value = false;
   }
 };
 </script>
@@ -900,6 +954,52 @@ const shareProduct = () => {
   margin-bottom: 2rem;
   padding-bottom: 2rem;
   border-bottom: 2px solid var(--pink-200);
+}
+
+.purchase-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.qty-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  border: 1px solid var(--pink-300);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  background: white;
+}
+
+.qty-controls button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--pink-100);
+  color: var(--pink-700);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.add-cart-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 0.8rem 1.3rem;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-400));
+}
+
+.cart-message {
+  margin: 0.5rem 0 0;
+  color: var(--pink-700);
+  font-weight: 600;
 }
 
 .product-description {

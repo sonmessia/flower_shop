@@ -10,8 +10,13 @@ public class OrderCheckoutRequest {
     private String shippingName;
 
     private String shippingPhone;
+
+    @NotBlank(message = "shippingStreet is required")
     private String shippingStreet;
+
+    @NotBlank(message = "shippingCity is required")
     private String shippingCity;
+
     private String shippingPostalCode;
     private String note;
 }

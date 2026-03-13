@@ -652,6 +652,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
@@ -684,14 +685,16 @@ onMounted(() => {
 }
 
 .filter-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
   gap: 12px;
+  align-items: center;
   margin-bottom: 24px;
 }
 
 .search-box {
-  width: 50%;
-  max-width: 500px;
+  position: relative;
+  width: 100%;
 }
 
 .search-icon {
@@ -708,14 +711,30 @@ onMounted(() => {
   border: 2px solid #e5e5e5;
   border-radius: 8px;
   font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--pink-500);
+  box-shadow: 0 0 0 3px rgba(243, 109, 161, 0.15);
 }
 
 .status-filter {
+  width: 100%;
   padding: 10px 16px;
   border: 2px solid #e5e5e5;
   border-radius: 8px;
   font-size: 0.95rem;
   cursor: pointer;
+  background: white;
+}
+
+.status-filter:focus {
+  outline: none;
+  border-color: var(--pink-500);
+  box-shadow: 0 0 0 3px rgba(243, 109, 161, 0.15);
 }
 
 .blogs-table-container {
@@ -1000,5 +1019,40 @@ onMounted(() => {
 .save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .management-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-bar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .blog-management {
+    padding: 16px;
+  }
+
+  .management-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .blogs-table th,
+  .blogs-table td {
+    padding: 12px 8px;
+  }
+
+  .title-cell {
+    max-width: 220px;
+  }
 }
 </style>

@@ -104,6 +104,13 @@
 
       <div class="auth-actions">
         <template v-if="userSession">
+          <router-link to="/cart" class="quick-link cart-link">
+            🛒 Giỏ hàng
+            <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
+          </router-link>
+          <router-link to="/orders" class="quick-link">
+            📦 Đơn hàng
+          </router-link>
           <router-link to="/account" class="user-badge user-badge-link">
             {{ userDisplayName }}
           </router-link>
@@ -135,6 +142,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import API from "../config/api";
+import userAxios from "../config/userAxios";
 
 const router = useRouter();
 
@@ -143,6 +151,7 @@ const searchResults = ref([]);
 const showSearchResults = ref(false);
 const isSearching = ref(false);
 const userSession = ref(null);
+const cartCount = ref(0);
 let searchTimeout = null;
 
 const emit = defineEmits(["search"]);
@@ -154,9 +163,11 @@ const userDisplayName = computed(() => {
 
 onMounted(async () => {
   syncUserSession();
+  await refreshCartCount();
   document.addEventListener("click", handleClickOutside);
   window.addEventListener("storage", handleUserAuthChanged);
   window.addEventListener("user-auth-changed", handleUserAuthChanged);
+  window.addEventListener("cart-updated", handleCartUpdated);
 });
 
 onUnmounted(() => {
@@ -164,6 +175,7 @@ onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
   window.removeEventListener("storage", handleUserAuthChanged);
   window.removeEventListener("user-auth-changed", handleUserAuthChanged);
+  window.removeEventListener("cart-updated", handleCartUpdated);
 });
 
 const syncUserSession = () => {
@@ -173,16 +185,37 @@ const syncUserSession = () => {
   } catch (error) {
     console.error("Không thể đọc thông tin user trong localStorage", error);
     userSession.value = null;
+    cartCount.value = 0;
   }
 };
 
-const handleUserAuthChanged = () => {
+const refreshCartCount = async () => {
+  if (!userSession.value) {
+    cartCount.value = 0;
+    return;
+  }
+
+  try {
+    const { data } = await userAxios.get(API.cart.get());
+    cartCount.value = data?.totalItems || 0;
+  } catch (error) {
+    cartCount.value = 0;
+  }
+};
+
+const handleUserAuthChanged = async () => {
   syncUserSession();
+  await refreshCartCount();
+};
+
+const handleCartUpdated = async () => {
+  await refreshCartCount();
 };
 
 const handleUserLogout = () => {
   localStorage.removeItem("user");
   userSession.value = null;
+  cartCount.value = 0;
   window.dispatchEvent(new Event("user-auth-changed"));
   router.push("/");
 };
@@ -531,6 +564,39 @@ const handleClickOutside = (event) => {
   gap: 0.7rem;
 }
 
+.quick-link {
+  position: relative;
+  text-decoration: none;
+  border: 1px solid var(--pink-300);
+  background: white;
+  color: var(--pink-700);
+  border-radius: 12px;
+  padding: 0.5rem 0.7rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: all 0.22s ease;
+}
+
+.cart-badge {
+  margin-left: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--pink-600);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0 0.35rem;
+  line-height: 1;
+}
+
+.quick-link:hover {
+  background: var(--pink-100);
+}
+
 .user-badge {
   max-width: 180px;
   white-space: nowrap;
@@ -614,6 +680,8 @@ const handleClickOutside = (event) => {
 
   .auth-actions {
     margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
 </style>

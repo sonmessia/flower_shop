@@ -65,6 +65,12 @@ public class Order {
     @Column(name = "note", length = 2000)
     private String note;
 
+    @Column(name = "cancellation_message", length = 2000)
+    private String cancellationMessage;
+
+    @Column(name = "cancellation_by", length = 255)
+    private String cancellationBy;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 

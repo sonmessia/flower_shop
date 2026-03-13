@@ -6,9 +6,12 @@ import AdminDashboard from "../components/AdminDashboard.vue";
 import BlogList from "../components/BlogList.vue";
 import BlogDetail from "../components/BlogDetail.vue";
 import AdminProductManagement from "../components/AdminProductManagement.vue";
+import AdminOrderManagement from "../components/AdminOrderManagement.vue";
 import UserLogin from "../components/UserLogin.vue";
 import UserRegister from "../components/UserRegister.vue";
 import UserManagement from "../components/UserManagement.vue";
+import CartPage from "../components/CartPage.vue";
+import OrderHistory from "../components/OrderHistory.vue";
 
 const routes = [
 	{
@@ -48,6 +51,18 @@ const routes = [
 		meta: { requiresUserAuth: true },
 	},
 	{
+		path: "/cart",
+		name: "CartPage",
+		component: CartPage,
+		meta: { requiresUserAuth: true },
+	},
+	{
+		path: "/orders",
+		name: "OrderHistory",
+		component: OrderHistory,
+		meta: { requiresUserAuth: true },
+	},
+	{
 		path: "/admin/login",
 		name: "AdminLogin",
 		component: AdminLogin,
@@ -62,6 +77,12 @@ const routes = [
 		path: "/admin/products",
 		name: "AdminProductManagement",
 		component: AdminProductManagement,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: "/admin/orders",
+		name: "AdminOrderManagement",
+		component: AdminOrderManagement,
 		meta: { requiresAuth: true },
 	},
 ];

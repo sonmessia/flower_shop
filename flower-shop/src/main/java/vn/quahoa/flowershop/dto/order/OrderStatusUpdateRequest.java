@@ -9,4 +9,8 @@ public class OrderStatusUpdateRequest {
 
     @NotNull(message = "status is required")
     private OrderStatus status;
+
+    private String cancelReason;
+
+    private String adminMessage;
 }

@@ -30,6 +30,10 @@ public class AdminOrderController {
     @PutMapping("/{orderId}/status")
     public OrderResponse updateStatus(@PathVariable Long orderId,
                                       @Valid @RequestBody OrderStatusUpdateRequest request) {
-        return orderService.updateOrderStatus(orderId, request.getStatus());
+        String cancelReason = request.getCancelReason();
+        if (cancelReason == null || cancelReason.trim().isEmpty()) {
+            cancelReason = request.getAdminMessage();
+        }
+        return orderService.updateOrderStatus(orderId, request.getStatus(), cancelReason);
     }
 }

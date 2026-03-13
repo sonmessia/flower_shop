@@ -65,6 +65,26 @@ export default {
 		updateMe: () => `${API_BASE_URL}/users/me`,
 	},
 
+	cart: {
+		get: () => `${API_BASE_URL}/cart`,
+		addItem: () => `${API_BASE_URL}/cart/items`,
+		updateItem: (cartItemId) => `${API_BASE_URL}/cart/items/${cartItemId}`,
+		removeItem: (cartItemId) => `${API_BASE_URL}/cart/items/${cartItemId}`,
+		clear: () => `${API_BASE_URL}/cart/clear`,
+	},
+
+	orders: {
+		checkout: () => `${API_BASE_URL}/orders/checkout`,
+		mine: () => `${API_BASE_URL}/orders/me`,
+		myById: (orderId) => `${API_BASE_URL}/orders/me/${orderId}`,
+		cancelMine: (orderId) => `${API_BASE_URL}/orders/me/${orderId}/cancel`,
+	},
+
+	adminOrders: {
+		getAll: () => `${API_BASE_URL}/admins/orders`,
+		updateStatus: (orderId) => `${API_BASE_URL}/admins/orders/${orderId}/status`,
+	},
+
 	blogs: {
 		getAll: () => `${API_BASE_URL}/blogs`,
 		getById: (id) => `${API_BASE_URL}/blogs/${id}`,

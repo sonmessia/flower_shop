@@ -21,6 +21,8 @@ public class OrderResponse {
     private String shippingCity;
     private String shippingPostalCode;
     private String note;
+    private String cancellationMessage;
+    private String cancellationBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<OrderItemResponse> items;

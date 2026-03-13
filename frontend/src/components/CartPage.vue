@@ -170,7 +170,13 @@ const applyCart = (data) => {
   cart.items = data.items || [];
   cart.totalItems = data.totalItems || 0;
   cart.subtotal = data.subtotal || 0;
-  window.dispatchEvent(new Event("cart-updated"));
+  window.dispatchEvent(
+    new CustomEvent("cart-updated", {
+      detail: {
+        totalItems: cart.totalItems,
+      },
+    })
+  );
 };
 
 const loadCart = async () => {

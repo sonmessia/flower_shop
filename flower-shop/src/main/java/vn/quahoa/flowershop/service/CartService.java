@@ -108,8 +108,12 @@ public class CartService {
             .build();
     }
 
+    private BigDecimal getScaledUnitPrice(Product product) {
+        return BigDecimal.valueOf(product.getPrice()).setScale(2, RoundingMode.HALF_UP);
+    }
+
     private CartItemResponse toCartItemResponse(CartItem item) {
-        BigDecimal unitPrice = BigDecimal.valueOf(item.getProduct().getPrice()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal unitPrice = getScaledUnitPrice(item.getProduct());
 
         return CartItemResponse.builder()
             .id(item.getId())
@@ -124,7 +128,7 @@ public class CartService {
     }
 
     private BigDecimal calculateLineTotal(CartItem item) {
-        BigDecimal unitPrice = BigDecimal.valueOf(item.getProduct().getPrice());
+        BigDecimal unitPrice = getScaledUnitPrice(item.getProduct());
         return unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()))
             .setScale(2, RoundingMode.HALF_UP);
     }

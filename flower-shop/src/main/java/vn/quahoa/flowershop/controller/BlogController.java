@@ -109,7 +109,7 @@ public class BlogController {
    */
   @PostMapping("/admins/blogs/{id}/images/main-url")
   public ResponseEntity<String> uploadMainBlogImageFromUrl(@PathVariable Long id,
-      @RequestBody ImageUrlRequest request) {
+      @Valid @RequestBody ImageUrlRequest request) {
     String imageUrl = blogService.uploadMainBlogImageFromUrl(id, request.getImageUrl());
     return ResponseEntity.ok(imageUrl);
   }
@@ -127,7 +127,7 @@ public class BlogController {
    * Upload additional image from URL
    */
   @PostMapping("/admins/blogs/{id}/images/url")
-  public ResponseEntity<String> uploadBlogImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
+  public ResponseEntity<String> uploadBlogImageFromUrl(@PathVariable Long id, @Valid @RequestBody ImageUrlRequest request) {
     String imageUrl = blogService.uploadBlogImageFromUrl(id, request.getImageUrl());
     return ResponseEntity.ok(imageUrl);
   }

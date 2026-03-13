@@ -121,6 +121,25 @@
         </div>
       </div>
 
+      <div class="auth-actions">
+        <template v-if="userSession">
+          <router-link to="/account" class="user-badge user-badge-link">
+            {{ userDisplayName }}
+          </router-link>
+          <button class="auth-btn logout-btn" @click="handleUserLogout">
+            Đăng xuất
+          </button>
+        </template>
+        <template v-else>
+          <router-link to="/register" class="auth-btn register-btn">
+            Đăng ký
+          </router-link>
+          <router-link to="/login" class="auth-btn login-btn">
+            Đăng nhập
+          </router-link>
+        </template>
+      </div>
+
       <!-- Admin Link
       <router-link to="/admin/login" class="admin-link">
         <i class="icon">👤</i>
@@ -131,9 +150,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import axios from "axios";
 import API from "../config/api";
+
+const router = useRouter();
 
 const searchQuery = ref("");
 const showCategories = ref(false);
@@ -141,14 +163,51 @@ const categories = ref([]);
 const searchResults = ref([]);
 const showSearchResults = ref(false);
 const isSearching = ref(false);
+const userSession = ref(null);
 let searchTimeout = null;
 
 const emit = defineEmits(["search", "select-category"]);
 
+const userDisplayName = computed(() => {
+  if (!userSession.value) return "";
+  return userSession.value.fullName || userSession.value.email || "Tài khoản";
+});
+
 onMounted(async () => {
   await fetchCategories();
+  syncUserSession();
   document.addEventListener("click", handleClickOutside);
+  window.addEventListener("storage", handleUserAuthChanged);
+  window.addEventListener("user-auth-changed", handleUserAuthChanged);
 });
+
+onUnmounted(() => {
+  clearTimeout(searchTimeout);
+  document.removeEventListener("click", handleClickOutside);
+  window.removeEventListener("storage", handleUserAuthChanged);
+  window.removeEventListener("user-auth-changed", handleUserAuthChanged);
+});
+
+const syncUserSession = () => {
+  try {
+    const stored = localStorage.getItem("user");
+    userSession.value = stored ? JSON.parse(stored) : null;
+  } catch (error) {
+    console.error("Khong the doc thong tin user trong localStorage", error);
+    userSession.value = null;
+  }
+};
+
+const handleUserAuthChanged = () => {
+  syncUserSession();
+};
+
+const handleUserLogout = () => {
+  localStorage.removeItem("user");
+  userSession.value = null;
+  window.dispatchEvent(new Event("user-auth-changed"));
+  router.push("/");
+};
 
 const fetchCategories = async () => {
   try {
@@ -557,6 +616,76 @@ const handleClickOutside = (event) => {
   border-color: var(--pink-400);
 }
 
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.user-badge {
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--pink-300);
+  color: var(--pink-700);
+  background: var(--pink-75);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-badge-link {
+  text-decoration: none;
+  transition: all 0.22s ease;
+}
+
+.user-badge-link:hover {
+  background: var(--pink-100);
+}
+
+.auth-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 0.55rem 0.95rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+
+.login-btn {
+  color: white;
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-400));
+}
+
+.register-btn {
+  color: var(--pink-700);
+  border: 1px solid var(--pink-300);
+  background: white;
+}
+
+.register-btn:hover {
+  background: var(--pink-100);
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(243, 109, 161, 0.28);
+}
+
+.logout-btn {
+  color: var(--pink-700);
+  border: 1px solid var(--pink-300);
+  background: white;
+}
+
+.logout-btn:hover {
+  background: var(--pink-100);
+}
+
 @media (max-width: 968px) {
   .navbar-container {
     flex-wrap: wrap;
@@ -572,6 +701,10 @@ const handleClickOutside = (event) => {
     order: 3;
     flex-basis: 100%;
     max-width: 100%;
+  }
+
+  .auth-actions {
+    margin-left: auto;
   }
 }
 </style>

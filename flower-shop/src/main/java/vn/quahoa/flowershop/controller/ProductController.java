@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import vn.quahoa.flowershop.dto.ImageUrlRequest;
+import vn.quahoa.flowershop.dto.image.ImageUrlRequest;
 import vn.quahoa.flowershop.dto.product.ProductCreateRequest;
 import vn.quahoa.flowershop.dto.product.ProductResponse;
 import vn.quahoa.flowershop.dto.product.ProductUpdateRequest;

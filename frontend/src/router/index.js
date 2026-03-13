@@ -6,6 +6,9 @@ import AdminDashboard from "../components/AdminDashboard.vue";
 import BlogList from "../components/BlogList.vue";
 import BlogDetail from "../components/BlogDetail.vue";
 import AdminProductManagement from "../components/AdminProductManagement.vue";
+import UserLogin from "../components/UserLogin.vue";
+import UserRegister from "../components/UserRegister.vue";
+import UserManagement from "../components/UserManagement.vue";
 
 const routes = [
   {
@@ -27,6 +30,22 @@ const routes = [
     path: "/blogs/:id",
     name: "BlogDetail",
     component: BlogDetail,
+  },
+  {
+    path: "/login",
+    name: "UserLogin",
+    component: UserLogin,
+  },
+  {
+    path: "/register",
+    name: "UserRegister",
+    component: UserRegister,
+  },
+  {
+    path: "/account",
+    name: "UserManagement",
+    component: UserManagement,
+    meta: { requiresUserAuth: true },
   },
   {
     path: "/admin/login",
@@ -55,9 +74,12 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const admin = JSON.parse(localStorage.getItem("admin") || "null");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   if (to.meta.requiresAuth && !admin) {
     next("/admin/login");
+  } else if (to.meta.requiresUserAuth && !user) {
+    next("/login");
   } else {
     next();
   }

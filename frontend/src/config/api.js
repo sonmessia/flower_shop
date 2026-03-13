@@ -57,6 +57,14 @@ export default {
 		login: () => `${API_BASE_URL}/admins/login`,
 	},
 
+	users: {
+		register: () => `${API_BASE_URL}/users/register`,
+		login: () => `${API_BASE_URL}/users/login`,
+		refresh: () => `${API_BASE_URL}/users/refresh`,
+		me: () => `${API_BASE_URL}/users/me`,
+		updateMe: () => `${API_BASE_URL}/users/me`,
+	},
+
 	blogs: {
 		getAll: () => `${API_BASE_URL}/blogs`,
 		getById: (id) => `${API_BASE_URL}/blogs/${id}`,

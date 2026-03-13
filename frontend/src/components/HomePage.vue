@@ -1,9 +1,6 @@
 <template>
   <div class="home-page">
-    <SiteNavbar
-      @search="handleSearch"
-      @select-category="handleCategorySelect"
-    />
+    <SiteNavbar @search="handleSearch" />
 
     <!-- Hero Section -->
     <section class="hero">
@@ -48,12 +45,43 @@
           <h2 class="section-title">Sản phẩm của chúng tôi</h2>
           <div class="filter-controls">
             <button
-              v-if="selectedCategory"
+              v-if="selectedCategoryIds.length"
               class="clear-filter"
               @click="clearCategory"
             >
-              ✕ {{ selectedCategory.name }}
+              ✕ {{ selectedCategoryIds.length }} danh mục
             </button>
+
+            <div class="category-filter">
+              <button
+                type="button"
+                class="sort-select category-toggle"
+                @click="toggleCategoryMenu"
+              >
+                Danh mục
+                <span v-if="selectedCategoryIds.length">
+                  ({{ selectedCategoryIds.length }})
+                </span>
+                <span class="arrow">▼</span>
+              </button>
+
+              <div v-if="showCategoryMenu" class="category-menu">
+                <label
+                  v-for="category in categories"
+                  :key="category.id"
+                  class="category-option"
+                >
+                  <input
+                    v-model="selectedCategoryIds"
+                    type="checkbox"
+                    :value="String(category.id)"
+                    @change="handleCategoryChange"
+                  />
+                  <span>{{ category.name }}</span>
+                </label>
+              </div>
+            </div>
+
             <select v-model="sortBy" class="sort-select">
               <option value="">Sắp xếp theo</option>
               <option value="price-asc">Giá: Thấp đến Cao</option>
@@ -191,7 +219,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import SiteNavbar from "./SiteNavbar.vue";
@@ -200,10 +228,12 @@ import API from "../config/api";
 const router = useRouter();
 
 const products = ref([]);
+const categories = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const searchQuery = ref("");
-const selectedCategory = ref(null);
+const selectedCategoryIds = ref([]);
+const showCategoryMenu = ref(false);
 const sortBy = ref("");
 const productsSection = ref(null);
 
@@ -212,19 +242,29 @@ const currentPage = ref(1);
 const itemsPerPage = 12;
 
 onMounted(async () => {
-  await fetchProducts();
+  await Promise.all([fetchProducts(), fetchCategories()]);
+  document.addEventListener("click", handleOutsideCategoryClick);
 });
 
-const fetchProducts = async (categoryId = null) => {
+onUnmounted(() => {
+  document.removeEventListener("click", handleOutsideCategoryClick);
+});
+
+const fetchCategories = async () => {
+  try {
+    const response = await axios.get(API.categories.getAll());
+    categories.value = response.data;
+  } catch (err) {
+    console.error("Lỗi khi tải danh mục:", err);
+  }
+};
+
+const fetchProducts = async () => {
   try {
     loading.value = true;
     error.value = null;
 
-    let url = categoryId
-      ? API.categories.getProducts(categoryId)
-      : API.products.getAll();
-
-    const response = await axios.get(url);
+    const response = await axios.get(API.products.getAll());
     products.value = response.data;
   } catch (err) {
     error.value = "Không thể tải sản phẩm. Vui lòng thử lại sau.";
@@ -238,17 +278,25 @@ const handleSearch = (query) => {
   searchQuery.value = query;
 };
 
-const handleCategorySelect = async (category) => {
-  selectedCategory.value = category;
-  await fetchProducts(category.id);
+const handleCategoryChange = () => {
   currentPage.value = 1;
   scrollToProducts();
 };
 
-const clearCategory = async () => {
-  selectedCategory.value = null;
+const clearCategory = () => {
+  selectedCategoryIds.value = [];
+  showCategoryMenu.value = false;
   currentPage.value = 1;
-  await fetchProducts();
+};
+
+const toggleCategoryMenu = () => {
+  showCategoryMenu.value = !showCategoryMenu.value;
+};
+
+const handleOutsideCategoryClick = (event) => {
+  if (!event.target.closest(".category-filter")) {
+    showCategoryMenu.value = false;
+  }
 };
 
 const scrollToProducts = () => {
@@ -270,7 +318,12 @@ const filteredProducts = computed(() => {
     );
   }
 
-  // Category filter is handled by API call, no need to filter here
+  if (selectedCategoryIds.value.length) {
+    result = result.filter((product) => {
+      const categoryId = product.category?.id ?? product.categoryId;
+      return selectedCategoryIds.value.includes(String(categoryId));
+    });
+  }
 
   // Sort
   if (sortBy.value === "price-asc") {
@@ -510,6 +563,53 @@ const goToProduct = (productId) => {
   display: flex;
   gap: 1rem;
   align-items: center;
+}
+
+.category-filter {
+  position: relative;
+}
+
+.category-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.category-toggle .arrow {
+  font-size: 0.7rem;
+}
+
+.category-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 220px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: white;
+  border: 2px solid var(--pink-200);
+  border-radius: 12px;
+  padding: 0.55rem;
+  box-shadow: 0 10px 26px rgba(243, 109, 161, 0.18);
+  z-index: 50;
+}
+
+.category-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  color: var(--pink-700);
+  cursor: pointer;
+}
+
+.category-option:hover {
+  background: var(--pink-100);
+}
+
+.category-option input[type="checkbox"] {
+  accent-color: var(--pink-500);
 }
 
 .clear-filter {
@@ -810,6 +910,12 @@ const goToProduct = (productId) => {
   .products-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1.5rem;
+  }
+
+  .filter-controls {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .pagination {

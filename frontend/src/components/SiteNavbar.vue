@@ -17,25 +17,6 @@
           <i class="icon">📝</i>
           <span>Blog</span>
         </router-link>
-
-        <div class="nav-dropdown">
-          <button class="nav-link dropdown-toggle" @click="toggleCategories">
-            <i class="icon">📂</i>
-            <span>Danh mục</span>
-            <i class="arrow" :class="{ open: showCategories }">▼</i>
-          </button>
-          <div v-if="showCategories" class="dropdown-menu">
-            <a
-              v-for="category in categories"
-              :key="category.id"
-              href="#"
-              class="dropdown-item"
-              @click.prevent="selectCategory(category)"
-            >
-              {{ category.name }}
-            </a>
-          </div>
-        </div>
       </div>
 
       <!-- Search Bar -->
@@ -158,15 +139,13 @@ import API from "../config/api";
 const router = useRouter();
 
 const searchQuery = ref("");
-const showCategories = ref(false);
-const categories = ref([]);
 const searchResults = ref([]);
 const showSearchResults = ref(false);
 const isSearching = ref(false);
 const userSession = ref(null);
 let searchTimeout = null;
 
-const emit = defineEmits(["search", "select-category"]);
+const emit = defineEmits(["search"]);
 
 const userDisplayName = computed(() => {
   if (!userSession.value) return "";
@@ -174,7 +153,6 @@ const userDisplayName = computed(() => {
 });
 
 onMounted(async () => {
-  await fetchCategories();
   syncUserSession();
   document.addEventListener("click", handleClickOutside);
   window.addEventListener("storage", handleUserAuthChanged);
@@ -207,15 +185,6 @@ const handleUserLogout = () => {
   userSession.value = null;
   window.dispatchEvent(new Event("user-auth-changed"));
   router.push("/");
-};
-
-const fetchCategories = async () => {
-  try {
-    const response = await axios.get(API.categories.getAll());
-    categories.value = response.data;
-  } catch (error) {
-    console.error("Lỗi khi tải danh mục:", error);
-  }
 };
 
 const handleSearchInput = () => {
@@ -256,19 +225,9 @@ const performSearch = async () => {
   }
 };
 
-const toggleCategories = () => {
-  showCategories.value = !showCategories.value;
-  showSearchResults.value = false;
-};
-
 const handleSearch = () => {
   closeSearchDropdown();
   emit("search", searchQuery.value);
-};
-
-const selectCategory = (category) => {
-  emit("select-category", category);
-  showCategories.value = false;
 };
 
 const closeSearchDropdown = () => {
@@ -284,9 +243,6 @@ const formatPrice = (price) => {
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
-  if (!event.target.closest(".nav-dropdown")) {
-    showCategories.value = false;
-  }
   if (!event.target.closest(".navbar-search")) {
     showSearchResults.value = false;
   }
@@ -370,39 +326,6 @@ const handleClickOutside = (event) => {
   font-size: 1.2rem;
 }
 
-.nav-dropdown {
-  position: relative;
-}
-
-.dropdown-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.arrow {
-  font-size: 0.7rem;
-  transition: transform 0.3s ease;
-  margin-left: 0.2rem;
-}
-
-.arrow.open {
-  transform: rotate(180deg);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(243, 109, 161, 0.15);
-  min-width: 200px;
-  overflow: hidden;
-  border: 1px solid var(--pink-200);
-  animation: slideDown 0.3s ease;
-}
-
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -412,20 +335,6 @@ const handleClickOutside = (event) => {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.dropdown-item {
-  display: block;
-  padding: 0.8rem 1.2rem;
-  color: var(--pink-700);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.dropdown-item:hover {
-  background: var(--pink-100);
-  color: var(--pink-600);
 }
 
 .navbar-search {

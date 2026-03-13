@@ -310,8 +310,8 @@ const onImageError = (event) => {
 const showUserNotification = (order) => {
   if (order.status !== "CANCELLED" || !order.cancellationMessage) return false;
   const by = order.cancellationBy || "";
-  if (by.startsWith("USER:")) return true;
-  if (by.startsWith("ADMIN:")) return false;
+  if (by.startsWith("ADMIN:")) return true;
+  if (by.startsWith("USER:")) return false;
 
   // Backward compatibility for old records without role prefix.
   return order.cancellationMessage.startsWith("Lý do hủy đơn:");

@@ -11,78 +11,78 @@ import UserRegister from "../components/UserRegister.vue";
 import UserManagement from "../components/UserManagement.vue";
 
 const routes = [
-  {
-    path: "/",
-    name: "Home",
-    component: HomePage,
-  },
-  {
-    path: "/products/:id",
-    name: "ProductDetail",
-    component: ProductDetail,
-  },
-  {
-    path: "/blogs",
-    name: "BlogList",
-    component: BlogList,
-  },
-  {
-    path: "/blogs/:id",
-    name: "BlogDetail",
-    component: BlogDetail,
-  },
-  {
-    path: "/login",
-    name: "UserLogin",
-    component: UserLogin,
-  },
-  {
-    path: "/register",
-    name: "UserRegister",
-    component: UserRegister,
-  },
-  {
-    path: "/account",
-    name: "UserManagement",
-    component: UserManagement,
-    meta: { requiresUserAuth: true },
-  },
-  {
-    path: "/admin/login",
-    name: "AdminLogin",
-    component: AdminLogin,
-  },
-  {
-    path: "/admin/dashboard",
-    name: "AdminDashboard",
-    component: AdminDashboard,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: "/admin/products",
-    name: "AdminProductManagement",
-    component: AdminProductManagement,
-    meta: { requiresAuth: true },
-  },
+	{
+		path: "/",
+		name: "Home",
+		component: HomePage,
+	},
+	{
+		path: "/products/:id",
+		name: "ProductDetail",
+		component: ProductDetail,
+	},
+	{
+		path: "/blogs",
+		name: "BlogList",
+		component: BlogList,
+	},
+	{
+		path: "/blogs/:id",
+		name: "BlogDetail",
+		component: BlogDetail,
+	},
+	{
+		path: "/login",
+		name: "UserLogin",
+		component: UserLogin,
+	},
+	{
+		path: "/register",
+		name: "UserRegister",
+		component: UserRegister,
+	},
+	{
+		path: "/account",
+		name: "UserManagement",
+		component: UserManagement,
+		meta: { requiresUserAuth: true },
+	},
+	{
+		path: "/admin/login",
+		name: "AdminLogin",
+		component: AdminLogin,
+	},
+	{
+		path: "/admin/dashboard",
+		name: "AdminDashboard",
+		component: AdminDashboard,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: "/admin/products",
+		name: "AdminProductManagement",
+		component: AdminProductManagement,
+		meta: { requiresAuth: true },
+	},
 ];
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
-  routes,
+	history: createWebHistory(process.env.BASE_URL),
+	routes,
 });
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const admin = JSON.parse(localStorage.getItem("admin") || "null");
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+	const admin = JSON.parse(localStorage.getItem("admin"));
+	const user = JSON.parse(localStorage.getItem("user"));
 
-  if (to.meta.requiresAuth && !admin) {
-    next("/admin/login");
-  } else if (to.meta.requiresUserAuth && !user) {
-    next("/login");
-  } else {
-    next();
-  }
+	if (to.meta.requiresAuth && !admin) {
+		return next("/admin/login");
+	}
+	if (to.meta.requiresUserAuth && !user) {
+		return next("/login");
+	}
+	next();
 });
 
 export default router;

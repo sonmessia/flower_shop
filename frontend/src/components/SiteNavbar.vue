@@ -171,7 +171,7 @@ const syncUserSession = () => {
     const stored = localStorage.getItem("user");
     userSession.value = stored ? JSON.parse(stored) : null;
   } catch (error) {
-    console.error("Khong the doc thong tin user trong localStorage", error);
+    console.error("Không thể đọc thông tin user trong localStorage", error);
     userSession.value = null;
   }
 };

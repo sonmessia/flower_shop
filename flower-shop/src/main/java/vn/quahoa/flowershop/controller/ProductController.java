@@ -90,7 +90,8 @@ public class ProductController {
    * Upload an additional image for a product (from URL)
    */
   @PostMapping("/products/{id}/images/url")
-  public ResponseEntity<String> uploadProductImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
+  public ResponseEntity<String> uploadProductImageFromUrl(@PathVariable Long id,
+      @RequestBody @Valid ImageUrlRequest request) {
     String imageUrl = productService.uploadProductImageFromUrl(id, request.getImageUrl());
     return ResponseEntity.ok(imageUrl);
   }

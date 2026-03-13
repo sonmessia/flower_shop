@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,17 +49,25 @@ public class CartService {
         Product product = productRepository.findById(request.getProductId())
             .orElseThrow(() -> new ResourceNotFoundException("Product", request.getProductId()));
 
-        CartItem item = cartItemRepository.findByUser_IdAndProduct_Id(userId, request.getProductId())
-            .orElseGet(() -> {
-                CartItem newItem = new CartItem();
-                newItem.setUser(user);
-                newItem.setProduct(product);
-                newItem.setQuantity(0);
-                return newItem;
-            });
+        try {
+            CartItem item = cartItemRepository.findByUser_IdAndProduct_Id(userId, request.getProductId())
+                .orElseGet(() -> {
+                    CartItem newItem = new CartItem();
+                    newItem.setUser(user);
+                    newItem.setProduct(product);
+                    newItem.setQuantity(0);
+                    return newItem;
+                });
 
-        item.setQuantity(item.getQuantity() + request.getQuantity());
-        cartItemRepository.save(item);
+            item.setQuantity(item.getQuantity() + request.getQuantity());
+            cartItemRepository.save(item);
+        } catch (DataIntegrityViolationException ex) {
+            // Handle possible race condition where another transaction inserted the same (user, product)
+            CartItem existingItem = cartItemRepository.findByUser_IdAndProduct_Id(userId, request.getProductId())
+                .orElseThrow(() -> ex);
+            existingItem.setQuantity(existingItem.getQuantity() + request.getQuantity());
+            cartItemRepository.save(existingItem);
+        }
 
         return getCart(userId);
     }

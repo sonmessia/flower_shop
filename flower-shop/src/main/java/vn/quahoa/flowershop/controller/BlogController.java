@@ -31,134 +31,135 @@ import vn.quahoa.flowershop.service.BlogService;
 @RequiredArgsConstructor
 public class BlogController {
 
-    private final BlogService blogService;
+  private final BlogService blogService;
 
-    @PostMapping("/admin/blogs")
-    @ResponseStatus(HttpStatus.CREATED)
-    public BlogResponse createBlog(@Valid @RequestBody BlogCreateRequest request) {
-        return BlogResponse.fromEntity(blogService.createBlog(request));
+  @PostMapping("/admins/blogs")
+  @ResponseStatus(HttpStatus.CREATED)
+  public BlogResponse createBlog(@Valid @RequestBody BlogCreateRequest request) {
+    return BlogResponse.fromEntity(blogService.createBlog(request));
+  }
+
+  @GetMapping("/blogs")
+  public List<BlogResponse> getPublicBlogs(@RequestParam(required = false) String search) {
+    if (search != null && !search.trim().isEmpty()) {
+      return blogService.searchBlogs(search).stream()
+          .map(BlogResponse::fromEntity)
+          .collect(Collectors.toList());
     }
+    return blogService.getPublishedBlogs().stream()
+        .map(BlogResponse::fromEntity)
+        .collect(Collectors.toList());
+  }
 
-    @GetMapping("/blogs")
-    public List<BlogResponse> getPublicBlogs(@RequestParam(required = false) String search) {
-        if (search != null && !search.trim().isEmpty()) {
-            return blogService.searchBlogs(search).stream()
-                    .map(BlogResponse::fromEntity)
-                    .collect(Collectors.toList());
-        }
-        return blogService.getPublishedBlogs().stream()
-                .map(BlogResponse::fromEntity)
-                .collect(Collectors.toList());
-    }
+  @GetMapping("/blogs/{id}")
+  public BlogResponse getBlog(@PathVariable Long id) {
+    return BlogResponse.fromEntity(blogService.getBlogById(id));
+  }
 
-    @GetMapping("/blogs/{id}")
-    public BlogResponse getBlog(@PathVariable Long id) {
-        return BlogResponse.fromEntity(blogService.getBlogById(id));
-    }
+  @GetMapping("/admins/blogs")
+  public List<BlogResponse> getAllBlogsForAdmin() {
+    return blogService.getAllBlogs().stream()
+        .map(BlogResponse::fromEntity)
+        .collect(Collectors.toList());
+  }
 
-    @GetMapping("/admin/blogs")
-    public List<BlogResponse> getAllBlogsForAdmin() {
-        return blogService.getAllBlogs().stream()
-                .map(BlogResponse::fromEntity)
-                .collect(Collectors.toList());
-    }
+  @GetMapping("/admins/blogs/author/{authorId}")
+  public List<BlogResponse> getBlogsByAuthor(@PathVariable Long authorId) {
+    return blogService.getBlogsByAuthor(authorId).stream()
+        .map(BlogResponse::fromEntity)
+        .collect(Collectors.toList());
+  }
 
-    @GetMapping("/admin/blogs/author/{authorId}")
-    public List<BlogResponse> getBlogsByAuthor(@PathVariable Long authorId) {
-        return blogService.getBlogsByAuthor(authorId).stream()
-                .map(BlogResponse::fromEntity)
-                .collect(Collectors.toList());
-    }
+  @PutMapping("/admins/blogs/{id}")
+  public BlogResponse updateBlog(@PathVariable Long id, @Valid @RequestBody BlogUpdateRequest request) {
+    return BlogResponse.fromEntity(blogService.updateBlog(id, request));
+  }
 
-    @PutMapping("/admin/blogs/{id}")
-    public BlogResponse updateBlog(@PathVariable Long id, @Valid @RequestBody BlogUpdateRequest request) {
-        return BlogResponse.fromEntity(blogService.updateBlog(id, request));
-    }
+  @PatchMapping("/admins/blogs/{id}/publish")
+  public BlogResponse publishBlog(@PathVariable Long id) {
+    return BlogResponse.fromEntity(blogService.publishBlog(id));
+  }
 
-    @PatchMapping("/admin/blogs/{id}/publish")
-    public BlogResponse publishBlog(@PathVariable Long id) {
-        return BlogResponse.fromEntity(blogService.publishBlog(id));
-    }
+  @PatchMapping("/admins/blogs/{id}/unpublish")
+  public BlogResponse unpublishBlog(@PathVariable Long id) {
+    return BlogResponse.fromEntity(blogService.unpublishBlog(id));
+  }
 
-    @PatchMapping("/admin/blogs/{id}/unpublish")
-    public BlogResponse unpublishBlog(@PathVariable Long id) {
-        return BlogResponse.fromEntity(blogService.unpublishBlog(id));
-    }
+  @DeleteMapping("/admins/blogs/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteBlog(@PathVariable Long id) {
+    blogService.deleteBlog(id);
+  }
 
-    @DeleteMapping("/admin/blogs/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteBlog(@PathVariable Long id) {
-        blogService.deleteBlog(id);
-    }
+  // ============================================
+  // IMAGE UPLOAD ENDPOINTS
+  // ============================================
 
-    // ============================================
-    // IMAGE UPLOAD ENDPOINTS
-    // ============================================
+  /**
+   * Upload main/featured image from file
+   */
+  @PostMapping("/admins/blogs/{id}/images/main")
+  public ResponseEntity<String> uploadMainBlogImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    String imageUrl = blogService.uploadMainBlogImage(id, file);
+    return ResponseEntity.ok(imageUrl);
+  }
 
-    /**
-     * Upload main/featured image from file
-     */
-    @PostMapping("/admin/blogs/{id}/images/main")
-    public ResponseEntity<String> uploadMainBlogImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
-        String imageUrl = blogService.uploadMainBlogImage(id, file);
-        return ResponseEntity.ok(imageUrl);
-    }
+  /**
+   * Upload main/featured image from URL
+   */
+  @PostMapping("/admins/blogs/{id}/images/main-url")
+  public ResponseEntity<String> uploadMainBlogImageFromUrl(@PathVariable Long id,
+      @RequestBody ImageUrlRequest request) {
+    String imageUrl = blogService.uploadMainBlogImageFromUrl(id, request.getImageUrl());
+    return ResponseEntity.ok(imageUrl);
+  }
 
-    /**
-     * Upload main/featured image from URL
-     */
-    @PostMapping("/admin/blogs/{id}/images/main-url")
-    public ResponseEntity<String> uploadMainBlogImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
-        String imageUrl = blogService.uploadMainBlogImageFromUrl(id, request.getImageUrl());
-        return ResponseEntity.ok(imageUrl);
-    }
+  /**
+   * Upload additional image from file
+   */
+  @PostMapping("/admins/blogs/{id}/images")
+  public ResponseEntity<String> uploadBlogImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    String imageUrl = blogService.uploadBlogImage(id, file);
+    return ResponseEntity.ok(imageUrl);
+  }
 
-    /**
-     * Upload additional image from file
-     */
-    @PostMapping("/admin/blogs/{id}/images")
-    public ResponseEntity<String> uploadBlogImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
-        String imageUrl = blogService.uploadBlogImage(id, file);
-        return ResponseEntity.ok(imageUrl);
-    }
+  /**
+   * Upload additional image from URL
+   */
+  @PostMapping("/admins/blogs/{id}/images/url")
+  public ResponseEntity<String> uploadBlogImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
+    String imageUrl = blogService.uploadBlogImageFromUrl(id, request.getImageUrl());
+    return ResponseEntity.ok(imageUrl);
+  }
 
-    /**
-     * Upload additional image from URL
-     */
-    @PostMapping("/admin/blogs/{id}/images/url")
-    public ResponseEntity<String> uploadBlogImageFromUrl(@PathVariable Long id, @RequestBody ImageUrlRequest request) {
-        String imageUrl = blogService.uploadBlogImageFromUrl(id, request.getImageUrl());
-        return ResponseEntity.ok(imageUrl);
-    }
+  // ============================================
+  // IMAGE DELETE ENDPOINTS
+  // ============================================
 
-    // ============================================
-    // IMAGE DELETE ENDPOINTS
-    // ============================================
+  /**
+   * Delete main/featured image
+   */
+  @DeleteMapping("/admins/blogs/{id}/images/main")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteMainBlogImage(@PathVariable Long id) {
+    blogService.deleteMainBlogImage(id);
+  }
 
-    /**
-     * Delete main/featured image
-     */
-    @DeleteMapping("/admin/blogs/{id}/images/main")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteMainBlogImage(@PathVariable Long id) {
-        blogService.deleteMainBlogImage(id);
-    }
+  /**
+   * Delete a specific additional image
+   */
+  @DeleteMapping("/admins/blogs/{id}/images/{imageId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteBlogImage(@PathVariable Long id, @PathVariable Long imageId) {
+    blogService.deleteBlogImage(id, imageId);
+  }
 
-    /**
-     * Delete a specific additional image
-     */
-    @DeleteMapping("/admin/blogs/{id}/images/{imageId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteBlogImage(@PathVariable Long id, @PathVariable Long imageId) {
-        blogService.deleteBlogImage(id, imageId);
-    }
-
-    /**
-     * Delete all additional images
-     */
-    @DeleteMapping("/admin/blogs/{id}/images")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteAllBlogImages(@PathVariable Long id) {
-        blogService.deleteAllBlogImages(id);
-    }
+  /**
+   * Delete all additional images
+   */
+  @DeleteMapping("/admins/blogs/{id}/images")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteAllBlogImages(@PathVariable Long id) {
+    blogService.deleteAllBlogImages(id);
+  }
 }

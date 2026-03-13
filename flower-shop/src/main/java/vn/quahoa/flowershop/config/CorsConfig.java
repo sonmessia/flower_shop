@@ -22,8 +22,7 @@ public class CorsConfig implements WebMvcConfigurer {
       "http://localhost:5173",
       "http://127.0.0.1:5173",
       "http://localhost:8081",
-      "http://127.0.0.1:8081"
-  );
+      "http://127.0.0.1:8081");
 
   /**
    * CorsFilter runs at the servlet filter level (before DispatcherServlet),

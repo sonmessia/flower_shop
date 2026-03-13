@@ -11,12 +11,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
 
-    private final StorageProperties storageProperties;
+  private final StorageProperties storageProperties;
 
-    @Override
-    public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
-        // Serve uploaded files from configured storage path
-        registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:" + storageProperties.getLocalPath() + "/");
-    }
+  @Override
+  public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
+    // Serve uploaded files from configured storage path
+    registry.addResourceHandler("/images/**")
+        .addResourceLocations("file:" + storageProperties.getLocalPath() + "/");
+  }
 }

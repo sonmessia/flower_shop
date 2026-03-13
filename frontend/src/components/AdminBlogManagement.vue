@@ -265,7 +265,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import axios from "axios";
+import axios from "../config/axiosConfig";
 import apiConfig from "../config/api";
 import ImageUploader from "./ImageUploader.vue";
 
@@ -495,7 +495,10 @@ const saveBlog = async () => {
       blogId = currentBlogId.value;
       alert("Cập nhật bài viết thành công!");
     } else {
-      const response = await axios.post(apiConfig.blogs.create(), formData.value);
+      const response = await axios.post(
+        apiConfig.blogs.create(),
+        formData.value
+      );
       blogId = response.data.id;
       alert("Tạo bài viết mới thành công!");
     }

@@ -638,8 +638,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
-import API from "../config/api";
+import axios from "../config/axiosConfig";
 import AdminBlogManagement from "./AdminBlogManagement.vue";
 import ImageUploader from "./ImageUploader.vue";
 
@@ -669,12 +668,8 @@ const handleLogout = () => {
   router.push("/");
 };
 
-const api = axios.create({
-  baseURL: API.baseURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+// Use configured axios instance (imported as axios from axiosConfig)
+const api = axios;
 
 const categories = ref([]);
 const products = ref([]);
@@ -1201,7 +1196,7 @@ const submitProduct = async () => {
 
   // Xác định imageUrl cho payload (chỉ sử dụng khi user nhập URL)
   let imageUrlForPayload = null;
-  
+
   if (editing.product) {
     // Nếu đang edit sản phẩm
     if (newMainImages.value.length > 0) {
@@ -1264,7 +1259,7 @@ const submitProduct = async () => {
     // 1. Upload main image nếu có file được chọn
     if (newMainImages.value.length > 0) {
       const mainImage = newMainImages.value[0];
-      
+
       // Chỉ upload nếu là file, còn URL đã được xử lý ở payload
       if (mainImage.source === "file" && mainImage.file) {
         totalUploads++;
@@ -1313,16 +1308,25 @@ const submitProduct = async () => {
           }
         } catch (error) {
           console.error("❌ Error uploading additional image:", error);
-          showToast("error", `Không thể tải lên ảnh: ${image.fileName || 'Unknown'}`);
+          showToast(
+            "error",
+            `Không thể tải lên ảnh: ${image.fileName || "Unknown"}`
+          );
         }
       }
     }
 
     if (totalUploads > 0) {
       if (successUploads === totalUploads) {
-        showToast("success", `✅ Đã tải lên ${successUploads} hình ảnh thành công!`);
+        showToast(
+          "success",
+          `✅ Đã tải lên ${successUploads} hình ảnh thành công!`
+        );
       } else {
-        showToast("warning", `⚠️ Đã tải lên ${successUploads}/${totalUploads} hình ảnh`);
+        showToast(
+          "warning",
+          `⚠️ Đã tải lên ${successUploads}/${totalUploads} hình ảnh`
+        );
       }
     }
 

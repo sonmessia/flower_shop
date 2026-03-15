@@ -1,11 +1,14 @@
 <template>
   <div id="app">
     <router-view />
+    <ChatWidget />
+    <GlobalNotification />
   </div>
 </template>
 
 <script setup>
-// Router-based navigation - no need for local admin state here
+import ChatWidget from './components/Chat.vue';
+import GlobalNotification from './components/Notification.vue';
 </script>
 
 <style>

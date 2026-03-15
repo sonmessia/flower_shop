@@ -7,6 +7,7 @@ import BlogList from "../components/BlogList.vue";
 import BlogDetail from "../components/BlogDetail.vue";
 import AdminProductManagement from "../components/AdminProductManagement.vue";
 import AdminOrderManagement from "../components/AdminOrderManagement.vue";
+import AdminChatBoard from "../components/AdminChatBoard.vue";
 import UserLogin from "../components/UserLogin.vue";
 import UserRegister from "../components/UserRegister.vue";
 import UserManagement from "../components/UserManagement.vue";
@@ -83,6 +84,12 @@ const routes = [
 		path: "/admin/orders",
 		name: "AdminOrderManagement",
 		component: AdminOrderManagement,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: "/admin/chat",
+		name: "AdminChatBoard",
+		component: AdminChatBoard,
 		meta: { requiresAuth: true },
 	},
 ];

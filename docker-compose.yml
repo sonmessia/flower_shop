@@ -27,6 +27,27 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # RabbitMQ with STOMP plugin
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: flowershop-rabbitmq-prod
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+      - "61613:61613" # STOMP
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    command: bash -c "rabbitmq-plugins enable --offline rabbitmq_stomp rabbitmq_web_stomp rabbitmq_management; rabbitmq-server"
+    networks:
+      - flowershop-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Spring Boot Backend - Production
   backend:
     build:
@@ -48,10 +69,13 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       STORAGE_LOCAL_PATH: /app/images
       STORAGE_BASE_URL: http://localhost/images
+      SPRING_RABBITMQ_HOST: rabbitmq
     volumes:
       - images_data:/app/images
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - flowershop-network
@@ -90,6 +114,7 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       STORAGE_LOCAL_PATH: /app/images
       STORAGE_BASE_URL: http://localhost:8081/images
+      SPRING_RABBITMQ_HOST: rabbitmq
     volumes:
       # Bind mount source code for hot-reload
       - ./flower-shop/src:/app/src:rw
@@ -98,6 +123,8 @@ services:
       - images_data:/app/images
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - flowershop-network

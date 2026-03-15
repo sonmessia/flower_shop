@@ -1,64 +1,94 @@
 <template>
-  <div class="admin-chat-layout">
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <h2>Active Chats</h2>
+  <div class="admin-chat-page">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="@/assets/logo_2.jpg" alt="Logo" class="logo-image" />
+        <p>Trung tâm hỗ trợ</p>
       </div>
-      <div class="room-list">
-        <div 
-          v-for="room in activeRooms" 
-          :key="room.roomId"
-          :class="['room-item', selectedRoomId === room.roomId ? 'active' : '']"
-          @click="selectRoom(room.roomId)"
+
+      <div class="quick-nav">
+        <router-link to="/admin/dashboard" class="nav-btn"
+          >📊 Dashboard</router-link
         >
-          <div class="room-info">
-            <span class="room-id">Customer: {{ room.roomId }}</span>
-            <span class="room-time">{{ formatTime(room.lastActive) }}</span>
-          </div>
-        </div>
-        <div v-if="activeRooms.length === 0" class="no-rooms">
-          No active chats found.
-        </div>
+        <router-link to="/admin/orders" class="nav-btn"
+          >📦 Đơn hàng</router-link
+        >
+        <router-link to="/admin/chat" class="nav-btn active"
+          >💬 Tương tác</router-link
+        >
       </div>
-    </div>
-    
-    <div class="main-chat-area">
-      <div v-if="selectedRoomId" class="chat-wrapper">
-        <div class="chat-header">
-          <h3>Chatting with {{ selectedRoomId }}</h3>
-          <span class="status-badge" :class="{ connected: connected }">
-            {{ connected ? 'Connected' : 'Disconnected' }}
-          </span>
-        </div>
-        
-        <div class="messages" ref="messagesContainer">
-          <div v-if="loadingHistory" class="loading">Loading history...</div>
+
+      <button type="button" class="logout-btn" @click="handleLogout">
+        Đăng xuất
+      </button>
+
+      <div class="chat-sidebar-section">
+        <h3 class="section-title">Danh sách hỗ trợ</h3>
+        <div class="room-list">
           <div 
-            v-for="(msg, index) in currentMessages" 
-            :key="index" 
-            :class="['message', msg.sender === adminName ? 'sent' : 'received']"
+            v-for="room in activeRooms" 
+            :key="room.roomId"
+            :class="['room-item', selectedRoomId === room.roomId ? 'active' : '']"
+            @click="selectRoom(room.roomId)"
           >
-            <div class="message-sender">{{ msg.sender }}</div>
-            <div class="message-content">{{ msg.content }}</div>
-            <div class="message-time">{{ formatTime(msg.timestamp) }}</div>
+            <div class="room-info">
+              <span class="room-id">{{ room.roomId }}</span>
+              <span class="room-time">{{ formatTime(room.lastActive) }}</span>
+            </div>
+          </div>
+          <div v-if="activeRooms.length === 0" class="no-rooms">
+            Không có khách hàng nào đang yêu cầu hỗ trợ.
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="page-header">
+        <div>
+          <h1>Chat Board</h1>
+          <p>Hỗ trợ trực tuyến và giải đáp khách hàng đang hoạt động.</p>
+        </div>
+      </header>
+
+      <div class="card chat-card">
+        <div v-if="selectedRoomId" class="chat-wrapper">
+          <div class="chat-header">
+            <h3>Đang hỗ trợ: {{ selectedRoomId }}</h3>
+            <span class="status-badge" :class="{ connected: connected }">
+              {{ connected ? 'Connected' : 'Disconnected' }}
+            </span>
+          </div>
+          
+          <div class="messages" ref="messagesContainer">
+            <div v-if="loadingHistory" class="loading">Đang tải dữ liệu...</div>
+            <div 
+              v-for="(msg, index) in currentMessages" 
+              :key="index" 
+              :class="['message', msg.sender === adminName ? 'sent' : 'received']"
+            >
+              <div class="message-sender">{{ msg.sender }}</div>
+              <div class="message-content">{{ msg.content }}</div>
+              <div class="message-time">{{ formatTime(msg.timestamp) }}</div>
+            </div>
+          </div>
+          
+          <div class="chat-input separator">
+            <input 
+              v-model="newMessage" 
+              @keyup.enter="sendMessage" 
+              placeholder="Nhập phản hồi của bạn..." 
+              :disabled="!connected"
+            />
+            <button @click="sendMessage" :disabled="!connected || !newMessage.trim()">Gửi</button>
           </div>
         </div>
         
-        <div class="chat-input separator">
-          <input 
-            v-model="newMessage" 
-            @keyup.enter="sendMessage" 
-            placeholder="Type a message to customer..." 
-            :disabled="!connected"
-          />
-          <button @click="sendMessage" :disabled="!connected || !newMessage.trim()">Send</button>
+        <div v-else class="no-selection">
+          <h3>Chọn một khách hàng từ danh sách bên trái để bắt đầu hỗ trợ.</h3>
         </div>
       </div>
-      
-      <div v-else class="no-selection">
-        <h3>Select a chat room from the sidebar to start messaging.</h3>
-      </div>
-    </div>
+    </main>
   </div>
 </template>
 
@@ -106,6 +136,10 @@ export default {
     this.disconnect();
   },
   methods: {
+    handleLogout() {
+      localStorage.removeItem("admin");
+      this.$router.push("/admin/login");
+    },
     async fetchActiveRooms() {
       try {
         const response = await userAxios.get(API.chat.adminRooms());
@@ -209,53 +243,125 @@ export default {
 </script>
 
 <style scoped>
-.admin-chat-layout {
-  display: flex;
-  height: calc(100vh - 64px); 
-  background-color: #f4f6f9;
+.admin-chat-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  background: linear-gradient(140deg, #fff8fc 0%, #fff0f7 45%, #ffe6f2 100%);
   font-family: 'Be Vietnam Pro', sans-serif;
-  margin-top: 64px; /* Assuming a top navbar exists, adjust if needed */
 }
 
-/* Sidebar Styles */
 .sidebar {
-  width: 300px;
-  background-color: #ffffff;
-  border-right: 1px solid #e0e0e0;
+  padding: 22px;
+  border-right: 1px solid var(--pink-200);
+  background: rgba(255, 255, 255, 0.86);
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  height: 100vh;
+  box-sizing: border-box;
 }
 
-.sidebar-header {
-  padding: 20px;
-  background-color: var(--pink-600, #ec4d8b);
-  color: white;
+.brand {
+  display: grid;
+  gap: 8px;
 }
 
-.sidebar-header h2 {
+.logo-image {
+  width: 180px;
+  height: 54px;
+  object-fit: cover;
+  background: white;
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.brand p {
   margin: 0;
-  font-size: 1.2rem;
+  color: var(--pink-600);
+  font-weight: 600;
+}
+
+.quick-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.nav-btn {
+  text-decoration: none;
+  border: 1px solid var(--pink-300);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--pink-700);
+  background: white;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.nav-btn.active,
+.nav-btn:hover {
+  background: var(--pink-100);
+}
+
+.logout-btn {
+  border: 1px solid var(--pink-300);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #c53958;
+  background: #fff;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: #fff0f3;
+}
+
+/* Chat-specific sidebar additions */
+.chat-sidebar-section {
+  margin-top: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.section-title {
+  font-size: 1rem;
+  color: var(--pink-700);
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed var(--pink-200);
 }
 
 .room-list {
   flex: 1;
   overflow-y: auto;
+  display: grid;
+  gap: 8px;
+  align-content: start;
 }
 
 .room-item {
-  padding: 15px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--pink-200);
+  background: rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .room-item:hover {
-  background-color: #f9f9f9;
+  background: #fff;
+  border-color: var(--pink-300);
 }
 
 .room-item.active {
   background-color: var(--pink-50, #fff6fb);
-  border-left: 4px solid var(--pink-600, #ec4d8b);
+  border: 1px solid var(--pink-500);
+  box-shadow: 0 0 0 1px var(--pink-100);
 }
 
 .room-info {
@@ -266,32 +372,67 @@ export default {
 
 .room-id {
   font-weight: 600;
-  color: #333;
+  color: var(--pink-800);
   font-size: 0.9rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 180px;
+  max-width: 120px;
 }
 
 .room-time {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--pink-500);
 }
 
 .no-rooms {
-  padding: 20px;
-  text-align: center;
-  color: #888;
+  text-align: left;
+  color: var(--pink-500);
   font-style: italic;
+  font-size: 0.9rem;
+  padding: 10px 5px;
 }
 
-/* Main Chat Area Styles */
-.main-chat-area {
+/* Main Content Area */
+.content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--pink-700);
+}
+
+.page-header p {
+  margin: 8px 0 0;
+  color: var(--pink-500);
+}
+
+.card {
+  border: 1px solid var(--pink-200);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 15px rgba(236, 77, 139, 0.05); /* very subtle pink shadow */
+}
+
+.chat-card {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #f4f6f9;
+  overflow: hidden;
 }
 
 .chat-wrapper {
@@ -301,30 +442,32 @@ export default {
 }
 
 .chat-header {
-  padding: 20px;
-  background-color: white;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 15px 20px;
+  border-bottom: 1px dashed var(--pink-200);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
 }
 
 .chat-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--pink-700);
+  font-size: 1.05rem;
 }
 
 .status-badge {
-  padding: 5px 10px;
+  padding: 5px 12px;
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: bold;
-  background-color: #ffcc00;
+  background-color: var(--peach-500, #ff9466);
   color: #fff;
 }
 
 .status-badge.connected {
-  background-color: #28a745;
+  background-color: #4caf50;
 }
 
 .messages {
@@ -334,14 +477,15 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  background: #fffafc; /* extremely subtle pink tint */
 }
 
 .message {
-  max-width: 60%;
+  max-width: 65%;
   padding: 12px 15px;
   border-radius: 15px;
   position: relative;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .message.sent {
@@ -355,14 +499,15 @@ export default {
   align-self: flex-start;
   background-color: white;
   color: #333;
+  border: 1px solid var(--pink-100);
   border-bottom-left-radius: 2px;
 }
 
 .message-sender {
-  font-size: 0.7rem;
-  opacity: 0.8;
+  font-size: 0.75rem;
+  opacity: 0.9;
   margin-bottom: 5px;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .message-content {
@@ -378,32 +523,35 @@ export default {
 }
 
 .chat-input {
-  padding: 20px;
+  padding: 15px 20px;
   background-color: white;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px dashed var(--pink-200);
   display: flex;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .chat-input input {
   flex: 1;
-  padding: 12px 20px;
-  border: 1px solid #ddd;
-  border-radius: 25px;
+  padding: 10px 18px;
+  border: 1px solid var(--pink-300);
+  border-radius: 20px;
   outline: none;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--pink-800);
 }
 
 .chat-input input:focus {
-  border-color: var(--pink-500, #f36da1);
+  border-color: var(--pink-500);
+  box-shadow: 0 0 0 2px var(--pink-100);
 }
 
 .chat-input button {
   background-color: var(--pink-600, #ec4d8b);
   color: white;
   border: none;
-  border-radius: 25px;
+  border-radius: 20px;
   padding: 0 25px;
   font-weight: 600;
   cursor: pointer;
@@ -415,7 +563,7 @@ export default {
 }
 
 .chat-input button:disabled {
-  background-color: #ccc;
+  background-color: var(--pink-200);
   cursor: not-allowed;
 }
 
@@ -424,13 +572,27 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #888;
+  color: var(--pink-500);
+  font-size: 1.1rem;
 }
 
 .loading {
   text-align: center;
-  color: #888;
+  color: var(--pink-500);
   padding: 10px;
   font-style: italic;
+}
+
+@media (max-width: 980px) {
+  .admin-chat-page {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--pink-200);
+    height: auto;
+  }
 }
 </style>

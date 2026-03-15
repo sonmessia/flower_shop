@@ -1,57 +1,84 @@
-# 🌸 Flower Shop - Hệ thống Quản lý Cửa hàng Hoa
+# 🌸 Flower Shop - Flower Shop Management System
 
-## 📋 Mô tả
+## 📋 Description
 
-Ứng dụng quản lý cửa hàng hoa với giao diện màu hồng pastel, bao gồm:
+A flower shop management application with a pastel pink theme, including:
 
 - **Backend**: Spring Boot + PostgreSQL
 - **Frontend**: Vue.js 3
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (Pre-initialized with data via `init.sql`)
 
-## 🚀 Cài đặt và Chạy
+## 🚀 Installation and Setup
 
-### Yêu cầu
+### Requirements
 
 - Docker Desktop
 - Docker Compose
 
-### Chạy toàn bộ hệ thống
+### Run the entire system
+
+The system provides a ready-to-use `manage.sh` script to easily manage Docker services:
 
 ```bash
-# Clone repository và di chuyển vào thư mục
+# Provide execution permission for the script (if needed)
+chmod +x manage.sh
+
+# Start and run all services in the background
+./manage.sh start
+
+# View system logs
+./manage.sh logs
+```
+
+Alternatively, you can use Docker Compose directly:
+
+```bash
+# Clone the repository and navigate into the directory
 cd /home/hoangsonsdk/flower_shop
 
-# Build và chạy tất cả services
-docker-compose up --build
+# Build and run all services
+docker compose up --build
 
-# Hoặc chạy ở background
-docker-compose up -d --build
+# Or run in the background
+docker compose up -d --build
 ```
 
-### Truy cập ứng dụng
+### Accessing the application
 
-- **Frontend (Trang chủ)**: http://localhost
-- **Backend API**: http://localhost:8080
-- **Admin Dashboard**: http://localhost/admin/login
+- **Frontend (Home)**: <http://localhost>
+- **Backend API**: <http://localhost:8080>
+- **Admin Dashboard**: <http://localhost/admin/login>
 
-### Dừng hệ thống
+### Stopping the system
+
+Using the management script:
 
 ```bash
-# Dừng tất cả containers
-docker-compose down
+# Stop all services
+./manage.sh stop
 
-# Dừng và xóa volumes (xóa database)
-docker-compose down -v
+# Stop and remove all data (including the database)
+./manage.sh clean
 ```
 
-## 🛠️ Phát triển Local
+Or using Docker Compose:
+
+```bash
+# Stop all containers
+docker compose down
+
+# Stop and remove volumes (deletes the database)
+docker compose down -v
+```
+
+## 🛠️ Local Development
 
 ### Backend (Spring Boot)
 
 ```bash
 cd flower-shop
 
-# Chạy PostgreSQL riêng
+# Run PostgreSQL separately
 docker run -d \
   --name postgres-dev \
   -e POSTGRES_DB=flowershop \
@@ -60,7 +87,7 @@ docker run -d \
   -p 5432:5432 \
   postgres:16-alpine
 
-# Chạy backend
+# Run backend
 mvn spring-boot:run
 ```
 
@@ -76,26 +103,38 @@ npm install
 npm run serve
 ```
 
-Backend sẽ chạy trên: http://localhost:8080
-Frontend sẽ chạy trên: http://localhost:84
+Backend will run on: <http://localhost:8080>
+Frontend will run on: <http://localhost:84>
 
-## 📦 Cấu trúc Project
+## 📦 Project Structure
 
-```
+```text
 flower_shop/
-├── docker-compose.yml          # Docker Compose configuration
-├── flower-shop/               # Spring Boot Backend
+├── .env.example                # Example environment variables file
+├── docker-compose.yml          # Docker Compose configuration (Dev environment)
+├── docker-compose.prod.yml     # Docker Compose configuration (Production environment)
+├── init.sql                    # Default database initialization script
+├── manage.sh                   # Docker helper management script
+├── flower-shop/                # Spring Boot Backend
 │   ├── Dockerfile
 │   ├── pom.xml
 │   └── src/
-└── frontend/                  # Vue.js Frontend
+└── frontend/                   # Vue.js Frontend
     ├── Dockerfile
     ├── nginx.conf
     ├── package.json
     └── src/
 ```
 
-## 🔧 Biến môi trường
+## 🔧 Environment Variables
+
+Before running the system, create the `.env` file from the example file:
+
+```bash
+cp .env.example .env
+```
+
+The environment variables are defined in the `.env` file:
 
 ### Backend Environment Variables
 
@@ -110,29 +149,29 @@ flower_shop/
 
 ### Frontend Build Args
 
-Frontend được build với `VUE_APP_API_BASE=http://localhost:8080/api`
+The frontend is built with `VUE_APP_API_BASE=http://localhost:8080/api`
 
 ## 📝 API Endpoints
 
 ### Products
 
-- `GET /api/products` - Lấy tất cả sản phẩm
-- `GET /api/products/{id}` - Lấy chi tiết sản phẩm
-- `POST /api/products` - Tạo sản phẩm mới
-- `PUT /api/products/{id}` - Cập nhật sản phẩm
-- `DELETE /api/products/{id}` - Xóa sản phẩm
+- **`GET /api/products`** - Get all products
+- **`GET /api/products/{id}`** - Get product details
+- **`POST /api/products`** - Create new product
+- **`PUT /api/products/{id}`** - Update product
+- **`DELETE /api/products/{id}`** - Delete product
 
 ### Categories
 
-- `GET /api/categories` - Lấy tất cả danh mục
-- `GET /api/categories/{id}/products` - Lấy sản phẩm theo danh mục
-- `POST /api/categories` - Tạo danh mục mới
-- `PUT /api/categories/{id}` - Cập nhật danh mục
-- `DELETE /api/categories/{id}` - Xóa danh mục
+- **`GET /api/categories`** - Get all categories
+- **`GET /api/categories/{id}/products`** - Get products by category
+- **`POST /api/categories`** - Create new category
+- **`PUT /api/categories/{id}`** - Update category
+- **`DELETE /api/categories/{id}`** - Delete category
 
 ### Admin
 
-- `POST /api/admins/login` - Đăng nhập admin
+- **`POST /api/admins/login`** - Admin login
 
 ## 🗄️ Database Schema
 
@@ -158,7 +197,7 @@ Frontend được build với `VUE_APP_API_BASE=http://localhost:8080/api`
 
 ## 🎨 Theme
 
-Ứng dụng sử dụng bảng màu hồng pastel:
+The application uses a pastel pink color palette:
 
 - Primary: `#F36DA1`
 - Light: `#FFE1F0`
@@ -171,35 +210,35 @@ Frontend được build với `VUE_APP_API_BASE=http://localhost:8080/api`
 
 ## 📸 Screenshots
 
-[Thêm screenshots sau]
+[Add screenshots later]
 
 ## 🐛 Troubleshooting
 
-### Port đã được sử dụng
+### Port already in use
 
 ```bash
-# Thay đổi port trong docker-compose.yml
-# Ví dụ: "8081:8080" thay vì "8080:8080"
+# Change the port in docker-compose.yml
+# For example: "8081:8080" instead of "8080:8080"
 ```
 
 ### Database connection error
 
 ```bash
-# Kiểm tra PostgreSQL đang chạy
-docker-compose ps
+# Check if PostgreSQL is running
+./manage.sh status
 
-# Xem logs
-docker-compose logs postgres
+# View logs
+./manage.sh logs
 ```
 
-### Frontend không kết nối được backend
+### Frontend cannot connect to backend
 
 ```bash
-# Kiểm tra backend logs
-docker-compose logs backend
+# Check backend logs
+./manage.sh logs
 
 # Restart services
-docker-compose restart
+./manage.sh restart
 ```
 
 ## 📄 License

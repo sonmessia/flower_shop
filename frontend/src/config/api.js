@@ -111,4 +111,10 @@ export default {
 		deleteImage: (blogId, imageId) =>
 			`${API_BASE_URL}/admins/blogs/${blogId}/images/${imageId}`,
 	},
+
+	chat: {
+		history: (roomId) => `${API_BASE_URL}/chat/history/${roomId}`,
+		wsUrl: () => API_BASE_URL.replace(/\/api\/?$/, '/ws'),
+		adminRooms: () => `${API_BASE_URL}/chat/rooms`,
+	},
 };

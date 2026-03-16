@@ -1,48 +1,50 @@
-# Development stage
-FROM maven:3.9-eclipse-temurin-25-alpine AS development
-
+# -----------------------------
+# 1. Base Stage (Contains common dependencies)
+# -----------------------------
+FROM maven:3.9-eclipse-temurin-25-alpine AS base
 WORKDIR /app
-
-# Pre-download dependencies using pom.xml for faster startup
-# Source code is bind-mounted from host via docker-compose for live editing
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# Expose port (matches docker-compose port mapping 8081:8080)
+# -----------------------------
+# 2. Development Stage
+# -----------------------------
+FROM base AS development
+# Source code is bind-mounted from the host via docker-compose
 EXPOSE 8080
-
-# Run the application in development mode
-# SPRING_PROFILES_ACTIVE is set via docker-compose environment, so no -D flag needed
 CMD ["mvn", "spring-boot:run"]
 
-# Build stage
-FROM maven:3.9-eclipse-temurin-25-alpine AS build
-WORKDIR /app
-
-# Copy pom.xml and download dependencies
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copy source code and build
+# -----------------------------
+# 3. Build Stage
+# -----------------------------
+FROM base AS build
 COPY src ./src
+# Build the application (can configure maven to skip plain jar in pom.xml)
 RUN mvn clean package -DskipTests
 
-# Production stage
+# -----------------------------
+# 4. Production Stage
+# -----------------------------
 FROM eclipse-temurin:25-jre-alpine AS production
 WORKDIR /app
 
 # Install curl for healthcheck
 RUN apk add --no-cache curl
 
-# Copy jar from build stage
+# Create a non-root user and group to run the application (Security)
+RUN addgroup -S spring && adduser -S spring -G spring
+
+# Copy the jar from the build stage (should use specific name or pattern to avoid plain jar)
+# Example: COPY --from=build /app/target/*-SNAPSHOT.jar app.jar
 COPY --from=build /app/target/*.jar app.jar
 
-# Create images directory for file storage
+# Create directories and set permissions for the 'spring' user
 RUN mkdir -p /app/images/products /app/images/blogs && \
-    chmod -R 755 /app/images
+  chown -R spring:spring /app/images && \
+  chmod -R 755 /app/images
 
-# Expose port
+# Switch to using the non-root user
+USER spring:spring
+
 EXPOSE 8080
-
-# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

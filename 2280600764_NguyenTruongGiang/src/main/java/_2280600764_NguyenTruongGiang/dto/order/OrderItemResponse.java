@@ -1,0 +1,19 @@
+package _2280600764_NguyenTruongGiang.dto.order;
+
+import java.math.BigDecimal;
+
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class OrderItemResponse {
+    private Long id;
+    private Long productId;
+    private String productCode;
+    private String productName;
+    private String imageUrl;
+    private BigDecimal unitPrice;
+    private Integer quantity;
+    private BigDecimal lineTotal;
+}

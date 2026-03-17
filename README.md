@@ -76,7 +76,7 @@ docker compose down -v
 ### Backend (Spring Boot)
 
 ```bash
-cd flower-shop
+cd 2280600764_NguyenTruongGiang
 
 # Run PostgreSQL separately
 docker run -d \
@@ -115,7 +115,7 @@ flower_shop/
 ├── docker-compose.prod.yml     # Docker Compose configuration (Production environment)
 ├── init.sql                    # Default database initialization script
 ├── manage.sh                   # Docker helper management script
-├── flower-shop/                # Spring Boot Backend
+├── 2280600764_NguyenTruongGiang/  # Spring Boot Backend
 │   ├── Dockerfile
 │   ├── pom.xml
 │   └── src/

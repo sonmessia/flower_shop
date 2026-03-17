@@ -32,7 +32,7 @@ services:
   # Spring Boot Backend
   backend:
     build:
-      context: ./flower-shop
+      context: ./2280600764_NguyenTruongGiang
       dockerfile: Dockerfile
       target: production
     container_name: flowershop-backend-prod

@@ -30,7 +30,7 @@ services:
   # Spring Boot Backend - Production
   backend:
     build:
-      context: ./flower-shop
+      context: ./2280600764_NguyenTruongGiang
       dockerfile: Dockerfile
       target: production
     container_name: flowershop-backend-prod
@@ -73,7 +73,7 @@ services:
   # Spring Boot Backend - Development
   backend-dev:
     build:
-      context: ./flower-shop
+      context: ./2280600764_NguyenTruongGiang
       dockerfile: Dockerfile
       target: development
     container_name: flowershop-backend-dev
@@ -93,8 +93,8 @@ services:
       STORAGE_BASE_URL: http://localhost:8081/images
     volumes:
       # Bind mount source code for hot-reload
-      - ./flower-shop/src:/app/src:rw
-      - ./flower-shop/pom.xml:/app/pom.xml:rw
+      - ./2280600764_NguyenTruongGiang/src:/app/src:rw
+      - ./2280600764_NguyenTruongGiang/pom.xml:/app/pom.xml:rw
       - maven_cache:/root/.m2
       # Persist uploaded images
       - images_data:/app/images

@@ -20,7 +20,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - flowershop-network
+      - backend-network
     logging:
       driver: "json-file"
       options:
@@ -54,7 +54,8 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - flowershop-network
+      - backend-network
+      - frontend-network
     logging:
       driver: "json-file"
       options:
@@ -94,13 +95,15 @@ services:
       # Bind mount source code for hot-reload
       - ./flower-shop/src:/app/src:rw
       - ./flower-shop/pom.xml:/app/pom.xml:rw
+      - maven_cache:/root/.m2
       # Persist uploaded images
       - images_data:/app/images
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - flowershop-network
+      - backend-network
+      - frontend-network
     profiles:
       - development
 
@@ -121,7 +124,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - flowershop-network
+      - frontend-network
     logging:
       driver: "json-file"
       options:
@@ -158,16 +161,20 @@ services:
     depends_on:
       - backend-dev
     networks:
-      - flowershop-network
+      - frontend-network
     profiles:
       - development
 
 networks:
-  flowershop-network:
+  frontend-network:
+    driver: bridge
+  backend-network:
     driver: bridge
 
 volumes:
   postgres_data:
     driver: local
   images_data:
+    driver: local
+  maven_cache:
     driver: local

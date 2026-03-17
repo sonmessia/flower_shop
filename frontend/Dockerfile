@@ -1,51 +1,53 @@
-# Development stage
-FROM node:18-alpine AS development
-
+# -----------------------------
+# 1. Base Stage (Common dependencies setup)
+# -----------------------------
+FROM node:18-alpine AS base
 WORKDIR /app
-
-# Copy package files and install dependencies
-# Source code is bind-mounted from host for hot-reload
+# Only copy package files first to leverage Docker layer caching
 COPY package*.json ./
+
+# -----------------------------
+# 2. Development Stage
+# -----------------------------
+FROM base AS development
+# Install all dependencies (including devDependencies)
 RUN npm install
 
-# Expose Vue CLI dev server port (matches docker-compose port mapping 5173:5173)
-EXPOSE 5173
+# Default Vue CLI dev server port (update if overridden in vue.config.js)
+EXPOSE 8080
 
-# Start development server with hot-reload accessible from outside the container
-CMD ["npm", "run", "serve", "--", "--port", "5173", "--host", "0.0.0.0"]
+# Start the Vue CLI dev server and allow external access (--host 0.0.0.0)
+CMD ["npm", "run", "serve", "--", "--host", "0.0.0.0"]
 
-# Build stage
-FROM node:18-alpine AS build
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
+# -----------------------------
+# 3. Build Stage
+# -----------------------------
+FROM base AS build
+# Use 'npm ci' instead of 'npm install' for deterministic builds (relies on package-lock.json)
 RUN npm ci
 
-# Copy source code
+# Copy the rest of the source code
 COPY . .
 
-# Build the application
+# Build the application (default output folder for Vite/Vue CLI is /app/dist)
 RUN npm run build
 
-# Production stage
+# -----------------------------
+# 4. Production Stage
+# -----------------------------
 FROM nginx:alpine AS production
 WORKDIR /usr/share/nginx/html
 
-# Remove default nginx static assets
+# Remove default Nginx static assets
 RUN rm -rf ./*
 
-# Copy built assets from build stage
+# Copy built assets from the build stage
 COPY --from=build /app/dist .
 
-# Copy nginx configuration
+# Copy custom Nginx configuration (MUST exist in the same directory as the Dockerfile)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port
 EXPOSE 80
 
-# Start nginx
+# Run Nginx in the foreground (otherwise the container will exit immediately)
 CMD ["nginx", "-g", "daemon off;"]

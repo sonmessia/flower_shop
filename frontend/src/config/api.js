@@ -82,7 +82,8 @@ export default {
 
 	adminOrders: {
 		getAll: () => `${API_BASE_URL}/admins/orders`,
-		updateStatus: (orderId) => `${API_BASE_URL}/admins/orders/${orderId}/status`,
+		updateStatus: (orderId) =>
+			`${API_BASE_URL}/admins/orders/${orderId}/status`,
 	},
 
 	blogs: {

@@ -13,12 +13,11 @@ FROM base AS development
 # Install all dependencies (including devDependencies)
 RUN npm install
 
-# Default port for Vite (Expose 8080 if using Vue CLI)
-EXPOSE 5173
+# Default Vue CLI dev server port (update if overridden in vue.config.js)
+EXPOSE 8080
 
-# Start the dev server and allow external access (--host 0.0.0.0)
-# (Change to "npm", "run", "serve" if using Vue CLI)
-CMD ["npm", "run", "serve", "--", "--port", "5173", "--host", "0.0.0.0"]
+# Start the Vue CLI dev server and allow external access (--host 0.0.0.0)
+CMD ["npm", "run", "serve", "--", "--host", "0.0.0.0"]
 
 # -----------------------------
 # 3. Build Stage

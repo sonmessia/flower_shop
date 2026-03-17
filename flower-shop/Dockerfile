@@ -34,8 +34,8 @@ RUN apk add --no-cache curl
 # Create a non-root user and group to run the application (Security)
 RUN addgroup -S spring && adduser -S spring -G spring
 
-# Copy the jar from the build stage (should use specific name or pattern to avoid plain jar)
-# Example: COPY --from=build /app/target/*-SNAPSHOT.jar app.jar
+# Copy the built jar from the build stage
+
 COPY --from=build /app/target/*.jar app.jar
 
 # Create directories and set permissions for the 'spring' user

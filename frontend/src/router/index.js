@@ -99,10 +99,24 @@ const router = createRouter({
 	routes,
 });
 
+const readStoredSession = (key) => {
+	try {
+		const raw = localStorage.getItem(key);
+		return raw ? JSON.parse(raw) : null;
+	} catch (error) {
+		console.error(`Invalid ${key} session in localStorage`, error);
+		return null;
+	}
+};
+
 // Navigation guard
 router.beforeEach((to, from, next) => {
-	const admin = JSON.parse(localStorage.getItem("admin"));
-	const user = JSON.parse(localStorage.getItem("user"));
+	const admin = readStoredSession("admin");
+	const user = readStoredSession("user");
+
+	if (to.path === "/admin/login" && admin) {
+		return next("/admin/dashboard");
+	}
 
 	if (to.meta.requiresAuth && !admin) {
 		return next("/admin/login");

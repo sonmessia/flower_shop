@@ -1,17 +1,18 @@
 package vn.quahoa.flowershop.service;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import vn.quahoa.flowershop.entity.ChatMessageEntity;
 import vn.quahoa.flowershop.model.ChatMessage;
 import vn.quahoa.flowershop.repository.ChatMessageRepository;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.Map;
-import java.util.HashMap;
 
 @Slf4j
 @Service
@@ -60,6 +61,7 @@ public class ChatService {
             Map<String, Object> map = new HashMap<>();
             map.put("roomId", row[0]);
             map.put("lastActive", row[1]);
+            map.put("customerName", row[2]);
             return map;
         }).collect(Collectors.toList());
     }

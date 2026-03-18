@@ -29,12 +29,13 @@
             v-for="room in activeRooms" 
             :key="room.roomId"
             :class="['room-item', selectedRoomId === room.roomId ? 'active' : '']"
-            @click="selectRoom(room.roomId)"
+            @click="selectRoom(room)"
           >
             <div class="room-info">
-              <span class="room-id">{{ room.roomId }}</span>
+              <span class="room-id">{{ room.customerName || room.roomId }}</span>
               <span class="room-time">{{ formatTime(room.lastActive) }}</span>
             </div>
+            <div class="room-subtext">{{ room.roomId }}</div>
           </div>
           <div v-if="activeRooms.length === 0" class="no-rooms">
             Không có khách hàng nào đang yêu cầu hỗ trợ.
@@ -54,7 +55,7 @@
       <div class="card chat-card">
         <div v-if="selectedRoomId" class="chat-wrapper">
           <div class="chat-header">
-            <h3>Đang hỗ trợ: {{ selectedRoomId }}</h3>
+            <h3>Đang hỗ trợ: {{ selectedCustomerName || selectedRoomId }}</h3>
             <span class="status-badge" :class="{ connected: connected }">
               {{ connected ? 'Connected' : 'Disconnected' }}
             </span>
@@ -104,6 +105,7 @@ export default {
     return {
       activeRooms: [],
       selectedRoomId: null,
+      selectedCustomerName: '',
       currentMessages: [],
       newMessage: '',
       connected: false,
@@ -148,13 +150,17 @@ export default {
         console.error("Failed to load active rooms:", error);
       }
     },
-    async selectRoom(roomId) {
+    async selectRoom(room) {
+      const roomId = room?.roomId;
+      const customerName = room?.customerName || '';
+      if (!roomId) return;
       if (this.selectedRoomId === roomId) return;
       
       // Disconnect from previous room if any
       this.disconnect();
       
       this.selectedRoomId = roomId;
+      this.selectedCustomerName = customerName;
       this.currentMessages = [];
       this.loadingHistory = true;
       
@@ -383,6 +389,15 @@ export default {
 .room-time {
   font-size: 0.75rem;
   color: var(--pink-500);
+}
+
+.room-subtext {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--pink-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .no-rooms {

@@ -71,8 +71,6 @@ public class AdminService {
         JwtTokenProvider.ROLE_ADMIN);
 
     return AdminAuthResponse.builder()
-        .id(admin.getId())
-        .username(admin.getUsername())
         .accessToken(accessToken)
         .refreshToken(refreshToken)
         .tokenType("Bearer")

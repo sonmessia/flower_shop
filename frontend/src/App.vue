@@ -1,11 +1,19 @@
 <template>
   <div id="app">
     <router-view />
+    <ChatWidget v-if="!isAdminRoute" />
+    <GlobalNotification />
   </div>
 </template>
 
 <script setup>
-// Router-based navigation - no need for local admin state here
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import ChatWidget from './components/Chat.vue';
+import GlobalNotification from './components/Notification.vue';
+
+const route = useRoute();
+const isAdminRoute = computed(() => route.path.startsWith('/admin'));
 </script>
 
 <style>

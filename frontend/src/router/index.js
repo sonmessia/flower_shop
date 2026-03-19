@@ -7,6 +7,7 @@ import BlogList from "../components/BlogList.vue";
 import BlogDetail from "../components/BlogDetail.vue";
 import AdminProductManagement from "../components/AdminProductManagement.vue";
 import AdminOrderManagement from "../components/AdminOrderManagement.vue";
+import AdminChatBoard from "../components/AdminChatBoard.vue";
 import UserLogin from "../components/UserLogin.vue";
 import UserRegister from "../components/UserRegister.vue";
 import UserManagement from "../components/UserManagement.vue";
@@ -85,6 +86,12 @@ const routes = [
 		component: AdminOrderManagement,
 		meta: { requiresAuth: true },
 	},
+	{
+		path: "/admin/chat",
+		name: "AdminChatBoard",
+		component: AdminChatBoard,
+		meta: { requiresAuth: true },
+	},
 ];
 
 const router = createRouter({
@@ -92,10 +99,24 @@ const router = createRouter({
 	routes,
 });
 
+const readStoredSession = (key) => {
+	try {
+		const raw = localStorage.getItem(key);
+		return raw ? JSON.parse(raw) : null;
+	} catch (error) {
+		console.error(`Invalid ${key} session in localStorage`, error);
+		return null;
+	}
+};
+
 // Navigation guard
 router.beforeEach((to, from, next) => {
-	const admin = JSON.parse(localStorage.getItem("admin"));
-	const user = JSON.parse(localStorage.getItem("user"));
+	const admin = readStoredSession("admin");
+	const user = readStoredSession("user");
+
+	if (to.path === "/admin/login" && admin) {
+		return next("/admin/dashboard");
+	}
 
 	if (to.meta.requiresAuth && !admin) {
 		return next("/admin/login");

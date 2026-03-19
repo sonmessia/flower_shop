@@ -40,6 +40,10 @@
         📦 Quản lý đơn hàng
       </router-link>
 
+      <router-link to="/admin/chat" class="home-link">
+        💬 Chat Board
+      </router-link>
+
       <router-link to="/" class="home-link"> 🏠 Về trang chủ </router-link>
     </aside>
 

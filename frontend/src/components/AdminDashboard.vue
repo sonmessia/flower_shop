@@ -36,6 +36,10 @@
         }}
       </button>
 
+      <a href="#dashboard" class="home-link">
+        📊 Thống kê doanh thu
+      </a>
+
       <router-link to="/admin/orders" class="home-link">
         📦 Quản lý đơn hàng
       </router-link>
@@ -126,6 +130,10 @@
           <span>{{ feedback.text }}</span>
         </div>
       </transition>
+
+      <section id="dashboard" class="panel">
+        <AdminRevenueDashboard />
+      </section>
 
       <section id="products" class="panel">
         <div class="panel-title">
@@ -648,6 +656,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import axios from "../config/axiosConfig";
 import AdminBlogManagement from "./AdminBlogManagement.vue";
+import AdminRevenueDashboard from "./AdminRevenueDashboard.vue";
 import ImageUploader from "./ImageUploader.vue";
 
 const router = useRouter();

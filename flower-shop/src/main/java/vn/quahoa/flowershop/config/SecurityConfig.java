@@ -65,6 +65,8 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/api/blogs/**").permitAll()
             // Static resources
             .requestMatchers("/images/**").permitAll()
+            // WebSockets
+            .requestMatchers("/ws/**").permitAll()
             // Admin protected endpoints
             .requestMatchers("/api/admins/**").hasRole("ADMIN")
             // User protected endpoints

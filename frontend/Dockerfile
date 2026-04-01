@@ -17,7 +17,7 @@ RUN npm install
 EXPOSE 8080
 
 # Start the Vue CLI dev server and allow external access (--host 0.0.0.0)
-CMD ["npm", "run", "serve", "--", "--host", "0.0.0.0"]
+CMD ["npm", "run", "serve", "--", "--port", "5173", "--host", "0.0.0.0"]
 
 # -----------------------------
 # 3. Build Stage

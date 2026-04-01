@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
+import vn.quahoa.flowershop.dto.dashboard.DashboardMonthlyDetailResponse;
 import vn.quahoa.flowershop.dto.dashboard.DashboardSummaryResponse;
 import vn.quahoa.flowershop.dto.dashboard.RevenueChartResponse;
 import vn.quahoa.flowershop.service.DashboardService;
@@ -30,5 +31,12 @@ public class AdminDashboardController {
             year = Year.now().getValue();
         }
         return dashboardService.getRevenueChartByYear(year);
+    }
+
+    @GetMapping("/monthly-detail")
+    public DashboardMonthlyDetailResponse getMonthlyDetail(
+            @RequestParam Integer year,
+            @RequestParam Integer month) {
+        return dashboardService.getMonthlyDetail(year, month);
     }
 }

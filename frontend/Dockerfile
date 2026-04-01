@@ -14,7 +14,7 @@ FROM base AS development
 RUN npm install
 
 # Default Vue CLI dev server port (update if overridden in vue.config.js)
-EXPOSE 8080
+EXPOSE 5173
 
 # Start the Vue CLI dev server and allow external access (--host 0.0.0.0)
 CMD ["npm", "run", "serve", "--", "--port", "5173", "--host", "0.0.0.0"]

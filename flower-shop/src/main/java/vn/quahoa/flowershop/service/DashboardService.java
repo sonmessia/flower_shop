@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
+import vn.quahoa.flowershop.dto.dashboard.DashboardMonthlyDetailResponse;
 import vn.quahoa.flowershop.dto.dashboard.DashboardSummaryResponse;
 import vn.quahoa.flowershop.dto.dashboard.RevenueChartResponse;
 import vn.quahoa.flowershop.model.Order;
@@ -25,6 +26,7 @@ public class DashboardService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final OrderService orderService;
 
     private static final List<OrderStatus> REVENUE_STATUSES = List.of(OrderStatus.COMPLETED, OrderStatus.SHIPPED);
 
@@ -80,6 +82,41 @@ public class DashboardService {
             .labels(labels)
             .data(data)
             .year(year)
+            .build();
+    }
+
+    public DashboardMonthlyDetailResponse getMonthlyDetail(int year, int month) {
+        YearMonth targetMonth = YearMonth.of(year, month);
+        LocalDateTime startOfMonth = targetMonth.atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = targetMonth.atEndOfMonth().atTime(23, 59, 59, 999999999);
+
+        List<Order> monthlyOrders = orderRepository.findByStatusInAndCreatedAtBetween(
+            REVENUE_STATUSES, startOfMonth, endOfMonth);
+
+        List<String> labels = new ArrayList<>();
+        List<BigDecimal> data = new ArrayList<>();
+        
+        int lengthOfMonth = targetMonth.lengthOfMonth();
+        for (int day = 1; day <= lengthOfMonth; day++) {
+            labels.add(String.valueOf(day));
+            int finalDay = day;
+            BigDecimal dayRevenue = monthlyOrders.stream()
+                .filter(o -> o.getCreatedAt().getDayOfMonth() == finalDay)
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            data.add(dayRevenue);
+        }
+
+        List<vn.quahoa.flowershop.dto.order.OrderResponse> orderResponses = monthlyOrders.stream()
+            .map(orderService::toOrderResponse)
+            .toList();
+
+        return DashboardMonthlyDetailResponse.builder()
+            .labels(labels)
+            .data(data)
+            .year(year)
+            .month(month)
+            .orders(orderResponses)
             .build();
     }
 }

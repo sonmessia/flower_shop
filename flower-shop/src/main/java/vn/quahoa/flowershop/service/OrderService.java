@@ -166,7 +166,7 @@ public class OrderService {
         return fallback;
     }
 
-    private OrderResponse toOrderResponse(Order order) {
+    public OrderResponse toOrderResponse(Order order) {
         List<OrderItemResponse> itemResponses = order.getItems().stream()
             .map(item -> {
                 BigDecimal lineTotal = item.getUnitPrice()

@@ -18,4 +18,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @EntityGraph(attributePaths = {"items", "items.product"})
     List<Order> findAllByOrderByCreatedAtDesc();
+
+    List<Order> findByStatusInAndCreatedAtBetween(List<vn.quahoa.flowershop.model.OrderStatus> statuses, java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
+
+    long countByCreatedAtBetween(java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
 }

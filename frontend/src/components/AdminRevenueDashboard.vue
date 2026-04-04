@@ -12,6 +12,28 @@
             <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
           </select>
         </label>
+        <label>
+          Tháng:
+          <select v-model="selectedExportMonth" class="year-select">
+            <option v-for="m in monthOptions" :key="m" :value="m">{{ m }}</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          class="refresh"
+          @click="exportYearReport"
+          :disabled="loading || exportingYear"
+        >
+          {{ exportingYear ? "Đang xuất..." : "Xuất Excel năm" }}
+        </button>
+        <button
+          type="button"
+          class="refresh"
+          @click="exportMonthReport"
+          :disabled="loading || exportingMonth"
+        >
+          {{ exportingMonth ? "Đang xuất..." : "Xuất Excel tháng" }}
+        </button>
         <button type="button" class="refresh ghost" @click="fetchData" :disabled="loading">
           {{ loading ? "Đang tải..." : "Làm mới" }}
         </button>
@@ -120,6 +142,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from '../config/axiosConfig';
+import * as XLSX from 'xlsx';
 import {
   Chart as ChartJS,
   Title,
@@ -139,9 +162,13 @@ const summary = ref(null);
 const loading = ref(false);
 const errorMsg = ref('');
 const selectedYear = ref(new Date().getFullYear());
+const selectedExportMonth = ref(new Date().getMonth() + 1);
 const availableYears = ref(
   Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i)
 );
+const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+const exportingYear = ref(false);
+const exportingMonth = ref(false);
 
 const chartData = ref({
   labels: [],
@@ -216,6 +243,101 @@ const formatCurrency = (value) => {
   }).format(value);
 };
 
+const formatDateTime = (value) => {
+  if (!value) return '';
+  return new Date(value).toLocaleString('vi-VN');
+};
+
+const writeExcelFile = (filename, sheets) => {
+  const workbook = XLSX.utils.book_new();
+  sheets.forEach((sheet) => {
+    const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name);
+  });
+  XLSX.writeFile(workbook, filename);
+};
+
+const getMonthlyDetail = async (year, month) => {
+  const res = await axios.get(`/admins/dashboard/monthly-detail?year=${year}&month=${month}`);
+  return res.data;
+};
+
+const exportYearReport = async () => {
+  if (!chartData.value.labels.length || !chartData.value.datasets[0]?.data?.length) {
+    alert('Không có dữ liệu doanh thu năm để xuất báo cáo.');
+    return;
+  }
+
+  exportingYear.value = true;
+  try {
+    const summaryRows = [
+      ['Báo cáo doanh thu năm', selectedYear.value],
+      ['Doanh thu tháng này', summary.value?.currentMonthRevenue ?? 0],
+      ['Đơn hàng tháng này', summary.value?.totalOrdersThisMonth ?? 0],
+      ['Tổng sản phẩm', summary.value?.totalProducts ?? 0],
+      ['Tổng khách hàng', summary.value?.totalUsers ?? 0]
+    ];
+
+    const monthlyRevenueRows = [
+      ['Tháng', 'Doanh thu (VND)']
+    ];
+
+    chartData.value.labels.forEach((label, index) => {
+      monthlyRevenueRows.push([label, chartData.value.datasets[0].data[index] ?? 0]);
+    });
+
+    writeExcelFile(`bao-cao-doanh-thu-nam-${selectedYear.value}.xlsx`, [
+      { name: 'TongQuan', rows: summaryRows },
+      { name: 'DoanhThuTheoThang', rows: monthlyRevenueRows }
+    ]);
+  } finally {
+    exportingYear.value = false;
+  }
+};
+
+const exportMonthReport = async () => {
+  exportingMonth.value = true;
+  try {
+    const detail = await getMonthlyDetail(selectedYear.value, selectedExportMonth.value);
+
+    const dailyRevenueRows = [
+      ['Báo cáo doanh thu tháng', `${selectedExportMonth.value}/${selectedYear.value}`],
+      [],
+      ['Doanh thu theo ngày'],
+      ['Ngày', 'Doanh thu (VND)']
+    ];
+
+    (detail.labels || []).forEach((label, index) => {
+      dailyRevenueRows.push([label, detail.data?.[index] ?? 0]);
+    });
+
+    const orderRows = [['Mã đơn hàng', 'Ngày tạo', 'Khách hàng', 'Doanh thu (VND)']];
+
+    (detail.orders || []).forEach((order) => {
+      orderRows.push([
+        order.id,
+        formatDateTime(order.createdAt),
+        order.shippingName,
+        order.totalAmount
+      ]);
+    });
+
+    if (!detail.orders || !detail.orders.length) {
+      orderRows.push(['', '', 'Không có đơn hàng nào trong tháng này', '']);
+    }
+
+    writeExcelFile(`bao-cao-doanh-thu-thang-${selectedYear.value}-${String(selectedExportMonth.value).padStart(2, '0')}.xlsx`, [
+      { name: 'DoanhThuTheoNgay', rows: dailyRevenueRows },
+      { name: 'DonHang', rows: orderRows }
+    ]);
+  } catch (error) {
+    console.error('Lỗi khi xuất báo cáo tháng', error);
+    alert('Không thể xuất báo cáo tháng này.');
+  } finally {
+    exportingMonth.value = false;
+  }
+};
+
 const fetchData = async () => {
   loading.value = true;
   errorMsg.value = '';
@@ -256,11 +378,11 @@ const openMonthlyDetail = async (month) => {
   monthlyData.value = null;
 
   try {
-    const res = await axios.get(`/admins/dashboard/monthly-detail?year=${selectedYear.value}&month=${month}`);
-    monthlyData.value = res.data;
+    const detail = await getMonthlyDetail(selectedYear.value, month);
+    monthlyData.value = detail;
 
     monthlyChartData.value = {
-      labels: res.data.labels,
+      labels: detail.labels,
       datasets: [
         {
           label: 'Doanh thu ngày (VND)',
@@ -270,7 +392,7 @@ const openMonthlyDetail = async (month) => {
           pointBackgroundColor: '#EC4899',
           tension: 0.3,
           fill: true,
-          data: res.data.data
+          data: detail.data
         }
       ]
     };
@@ -302,6 +424,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .year-select {
@@ -309,7 +433,11 @@ onMounted(() => {
   border-radius: 4px;
   border: 1px solid #ddd;
   margin-left: 0.5rem;
-  margin-right: 1rem;
+  margin-right: 0.75rem;
+}
+
+.refresh {
+  margin-right: 0.5rem;
 }
 
 .grid.four {
